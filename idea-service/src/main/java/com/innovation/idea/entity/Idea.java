@@ -1,0 +1,60 @@
+package com.innovation.idea.entity;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Entity
+@Table(name = "ideas")
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class Idea {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+
+    @Column(nullable = false, length = 200)
+    private String title;
+
+    @Column(columnDefinition = "TEXT", nullable = false)
+    private String description;
+
+    @Column(length = 100)
+    private String category;
+
+    @Column(nullable = false, length = 50)
+    private String status;
+
+    @Column(name = "submitted_by", nullable = false)
+    private UUID submittedBy;
+
+    @Column(name = "vote_count")
+    private Integer voteCount = 0;
+
+    @Column(name = "comment_count")
+    private Integer commentCount = 0;
+
+    @Column(name = "ai_score")
+    private Double aiScore;
+
+    @Column(columnDefinition = "TEXT[]")
+    private String tags;
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+}
