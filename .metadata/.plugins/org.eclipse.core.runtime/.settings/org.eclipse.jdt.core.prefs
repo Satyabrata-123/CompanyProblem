@@ -1,0 +1,6 @@
+eclipse.preferences.version=1
+org.eclipse.jdt.core.compiler.codegen.targetPlatform=21
+org.eclipse.jdt.core.compiler.compliance=21
+org.eclipse.jdt.core.compiler.release=enabled
+org.eclipse.jdt.core.compiler.source=21
+org.eclipse.jdt.core.userLibrary.Springjars=<?xml version\="1.0" encoding\="UTF-8"?>\r\n<userlibrary systemlibrary\="false" version\="2">\r\n\t<archive path\="C\:/Users/LENOVO/Desktop/jarFiles/commons-logging-1.3.5.jar"/>\r\n\t<archive path\="C\:/Users/LENOVO/Desktop/jarFiles/spring-beans-7.0.0-M3.jar"/>\r\n\t<archive path\="C\:/Users/LENOVO/Desktop/jarFiles/spring-context-7.0.0-M3.jar"/>\r\n\t<archive path\="C\:/Users/LENOVO/Desktop/jarFiles/spring-core-7.0.0-M3.jar"/>\r\n\t<archive path\="C\:/Users/LENOVO/Desktop/jarFiles/spring-expression-7.0.0-M3.jar"/>\r\n\t<archive path\="C\:/Users/LENOVO/Desktop/jarFiles/spring-aop-7.0.0-M3.jar"/>\r\n</userlibrary>\r\n
