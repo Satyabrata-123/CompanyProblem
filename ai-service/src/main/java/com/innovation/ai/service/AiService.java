@@ -115,7 +115,7 @@ public class AiService {
         try {
             String response = webClientBuilder.build()
                     .post()
-                    .uri("https://your-ai-api.com/evaluate?key=YOUR_API_KEY")
+                    .uri("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyBKqgWYxMjoOZfRJkfhHHxBAF978LD7Oqo")
                     .bodyValue(Map.of("prompt", prompt))
                     .retrieve()
                     .bodyToMono(String.class)

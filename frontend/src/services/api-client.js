@@ -46,7 +46,7 @@ export class ApiClient {
 
       // Handle empty responses
       if (response.status === 204) {
-        return null
+        return null 
       }
 
       // Try to parse JSON, fallback to text
