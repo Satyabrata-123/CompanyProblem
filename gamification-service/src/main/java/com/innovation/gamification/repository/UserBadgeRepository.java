@@ -11,7 +11,10 @@ import java.util.UUID;
 @Repository
 public interface UserBadgeRepository extends JpaRepository<UserBadge, UUID> {
 
+   
+    // Fetch all badges awarded to a specific user
     List<UserBadge> findByUserId(UUID userId);
 
-    Optional<UserBadge> findByUserIdAndBadgeId(UUID userId, UUID badgeId);
+    // Check if a specific user already has a specific badge
+    boolean existsByUserIdAndBadgeId(UUID userId, UUID badgeId);
 }
