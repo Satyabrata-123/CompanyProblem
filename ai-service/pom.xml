@@ -15,6 +15,7 @@
     <name>AI Service</name>
 
     <dependencies>
+       
         <dependency>
             <groupId>com.innovation</groupId>
             <artifactId>common</artifactId>

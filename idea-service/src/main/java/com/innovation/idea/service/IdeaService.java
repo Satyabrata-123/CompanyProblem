@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -65,6 +66,32 @@ public class IdeaService {
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
+    public List<UUID> findDuplicates(String title, String description) {
+        String combined = (title + " " + description).toLowerCase();
+        List<UUID> duplicates = new ArrayList<>();
+
+        List<Idea> allIdeas = ideaRepository.findAll(); // fetch all existing ideas
+
+        for (Idea idea : allIdeas) {
+            String existing = (idea.getTitle() + " " + idea.getDescription()).toLowerCase();
+            double similarity = calculateSimilarity(existing, combined);
+            if (similarity >= 0.7) { // threshold 70%
+                duplicates.add(idea.getId());
+            }
+        }
+
+        return duplicates;
+}
+
+// Simple similarity: Jaccard over words
+    private double calculateSimilarity(String text1, String text2) {
+        String[] words1 = text1.split("\\s+");
+        String[] words2 = text2.split("\\s+");
+        long intersection = Arrays.stream(words1).filter(word -> Arrays.asList(words2).contains(word)).count();
+        long union = words1.length + words2.length - intersection;
+        return union == 0 ? 0 : (double) intersection / union;
+    }
+
 
     @Transactional
     public IdeaDTO updateIdeaStatus(UUID id, String status) {

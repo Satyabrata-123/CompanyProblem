@@ -3,6 +3,8 @@ package com.innovation.ai.service;
 import com.innovation.ai.dto.CategorizeRequest;
 import com.innovation.ai.dto.CategorizeResponse;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -17,6 +19,7 @@ import java.util.UUID;
 public class AiService {
 
     private final WebClient.Builder webClientBuilder;
+
 
     public CategorizeResponse categorizeIdea(CategorizeRequest request) {
         String category = determineCategory(request.getTitle(), request.getDescription());
@@ -36,8 +39,21 @@ public class AiService {
     }
 
     public List<UUID> findDuplicates(String title, String description) {
-        return new ArrayList<>();
+        try {
+            return webClientBuilder.build()
+                    .get()
+                    .uri("http://localhost:8081/ideas/duplicates?title={title}&description={description}",
+                            title, description)
+                    .retrieve()
+                    .bodyToMono(new ParameterizedTypeReference<List<UUID>>() {})
+                    .block();
+        } catch (Exception e) {
+            System.err.println("Failed to get duplicates from idea-service: " + e.getMessage());
+            return new ArrayList<>();
+        }
     }
+
+    
 
     private String determineCategory(String title, String description) {
         String combined = (title + " " + description).toLowerCase();

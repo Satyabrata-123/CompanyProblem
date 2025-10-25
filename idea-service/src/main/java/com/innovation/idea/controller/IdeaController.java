@@ -48,6 +48,14 @@ public class IdeaController {
     public ResponseEntity<List<IdeaDTO>> getTopIdeas() {
         return ResponseEntity.ok(ideaService.getTopIdeasByVotes());
     }
+    @GetMapping("/duplicates")
+    public ResponseEntity<List<UUID>> getDuplicates(
+            @RequestParam String title,
+            @RequestParam String description) {
+                
+        List<UUID> duplicates = ideaService.findDuplicates(title, description);
+        return ResponseEntity.ok(duplicates);
+    }
 
     @PutMapping("/{id}/status")
     public ResponseEntity<IdeaDTO> updateIdeaStatus(
