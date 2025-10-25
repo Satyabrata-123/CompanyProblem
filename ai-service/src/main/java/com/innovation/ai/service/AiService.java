@@ -9,6 +9,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -75,28 +76,54 @@ public class AiService {
         return tags.isEmpty() ? Arrays.asList("general") : tags;
     }
 
-    private Double calculateScore(String title, String description) {
+   private Double calculateRuleScore(String title, String description) {
         double score = 50.0;
 
-        if (title.length() > 20 && title.length() < 100) {
-            score += 10;
-        }
-
-        if (description.length() > 100) {
-            score += 15;
-        }
+        if (title.length() > 20 && title.length() < 100) score += 10;
+        if (description.length() > 100) score += 15;
 
         String combined = (title + " " + description).toLowerCase();
-        if (combined.contains("innovative") || combined.contains("new") || combined.contains("revolutionary")) {
-            score += 10;
-        }
-
-        if (combined.contains("save") || combined.contains("profit") || combined.contains("revenue")) {
-            score += 15;
-        }
+        if (combined.contains("innovative") || combined.contains("new") || combined.contains("revolutionary")) score += 10;
+        if (combined.contains("save") || combined.contains("profit") || combined.contains("revenue")) score += 15;
 
         return Math.min(score, 100.0);
     }
+    private Double calculateAiScore(String title, String description) {
+        String prompt = """
+            Rate this idea from 0 to 100 based on creativity, usefulness, and clarity.
+            Respond only with a number.
+            Title: %s
+            Description: %s
+            """.formatted(title, description);
+
+        try {
+            String response = webClientBuilder.build()
+                    .post()
+                    .uri("https://your-ai-api.com/evaluate?key=YOUR_API_KEY")
+                    .bodyValue(Map.of("prompt", prompt))
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+
+            return Double.parseDouble(response.trim());
+        } catch (Exception e) {
+            System.err.println("AI scoring failed: " + e.getMessage());
+            return 50.0; // default neutral score
+        }
+    }
+    private Double calculateScore(String title, String description) {
+        double ruleScore = calculateRuleScore(title, description);
+        double aiScore = calculateAiScore(title, description);
+
+        // Weighted average: 60% rule, 40% AI (you can adjust)
+        double finalScore = (0.6 * ruleScore) + (0.4 * aiScore);
+
+        // Cap at 100
+        return Math.min(finalScore, 100.0);
+    }
+
+
+
 
     private void updateIdeaWithAiData(UUID ideaId, Double score) {
         try {
