@@ -504,9 +504,9 @@ function initializeSubmitIdeaForm() {
             <h4 class="font-medium text-gray-900 mb-2">⭐ AI Quality Score</h4>
             <div class="flex items-center">
               <div class="flex-1 bg-gray-200 rounded-full h-2">
-                <div class="bg-primary-600 h-2 rounded-full" style="width: ${(aiResponse.score || 0) * 10}%"></div>
+                <div class="bg-primary-600 h-2 rounded-full" style="width: ${(aiResponse.score || 0)}%"></div>
               </div>
-              <span class="ml-3 text-sm font-medium text-gray-900">${Math.round((aiResponse.score || 0) * 10)}/10</span>
+              <span class="ml-3 text-sm font-medium text-gray-900">${Math.round(aiResponse.score || 0)}/100</span>
             </div>
           </div>
           

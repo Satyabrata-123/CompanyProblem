@@ -131,9 +131,9 @@ export default async function IdeaDetailPage(params) {
                   <span class="text-blue-600 mr-2">🤖</span>
                   <span class="text-sm text-blue-800 mr-3">AI Quality Score:</span>
                   <div class="flex-1 bg-blue-200 rounded-full h-2">
-                    <div class="bg-blue-600 h-2 rounded-full" style="width: ${idea.aiScore * 10}%"></div>
+                    <div class="bg-blue-600 h-2 rounded-full" style="width: ${idea.aiScore}%"></div>
                   </div>
-                  <span class="text-sm font-medium text-blue-800 ml-3">${Math.round(idea.aiScore * 10)}/10</span>
+                  <span class="text-sm font-medium text-blue-800 ml-3">${Math.round(idea.aiScore)}/100</span>
                 </div>
               ` : ''}
 

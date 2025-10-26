@@ -66,6 +66,7 @@ public class IdeaService {
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
+
     public List<UUID> findDuplicates(String title, String description) {
         String combined = (title + " " + description).toLowerCase();
         List<UUID> duplicates = new ArrayList<>();
@@ -81,7 +82,7 @@ public class IdeaService {
         }
 
         return duplicates;
-}
+    }
 
 // Simple similarity: Jaccard over words
     private double calculateSimilarity(String text1, String text2) {
@@ -91,7 +92,6 @@ public class IdeaService {
         long union = words1.length + words2.length - intersection;
         return union == 0 ? 0 : (double) intersection / union;
     }
-
 
     @Transactional
     public IdeaDTO updateIdeaStatus(UUID id, String status) {

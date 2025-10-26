@@ -269,9 +269,9 @@ function createIdeaCard(idea, currentUser, isUserIdeas) {
           <div class="flex items-center mb-4">
             <span class="text-xs text-gray-500 mr-2">AI Score:</span>
             <div class="flex-1 bg-gray-200 rounded-full h-1.5">
-              <div class="bg-primary-600 h-1.5 rounded-full" style="width: ${idea.aiScore * 10}%"></div>
+              <div class="bg-primary-600 h-1.5 rounded-full" style="width: ${idea.aiScore}%"></div>
             </div>
-            <span class="text-xs text-gray-600 ml-2">${Math.round(idea.aiScore * 10)}/10</span>
+            <span class="text-xs text-gray-600 ml-2">${Math.round(idea.aiScore)}/100</span>
           </div>
         ` : ''}
 

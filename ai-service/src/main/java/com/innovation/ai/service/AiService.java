@@ -20,22 +20,56 @@ public class AiService {
 
     private final WebClient.Builder webClientBuilder;
 
-
     public CategorizeResponse categorizeIdea(CategorizeRequest request) {
-        String category = determineCategory(request.getTitle(), request.getDescription());
-        List<String> tags = extractTags(request.getTitle(), request.getDescription());
-        Double score = calculateScore(request.getTitle(), request.getDescription());
+        try {
+            System.out.println("Processing AI categorization for idea: " + request.getIdeaId());
 
-        updateIdeaWithAiData(request.getIdeaId(), score);
+            String category = determineCategory(request.getTitle(), request.getDescription());
+            List<String> tags = extractTags(request.getTitle(), request.getDescription());
+            Double score = calculateScore(request.getTitle(), request.getDescription());
 
-        return CategorizeResponse.builder()
-                .ideaId(request.getIdeaId())
-                .category(category)
-                .tags(tags)
-                .score(score)
-                .isDuplicate(false)
-                .similarIdeaIds(new ArrayList<>())
-                .build();
+            System.out.println("AI Analysis Results - Category: " + category + ", Score: " + score + ", Tags: " + tags);
+
+            // Update idea with AI data only if ideaId is provided (for existing ideas)
+            if (request.getIdeaId() != null) {
+                updateIdeaWithAiData(request.getIdeaId(), score);
+            } else {
+                System.out.println("No ideaId provided - this is a preview analysis");
+            }
+
+            // Check for duplicates
+            List<UUID> duplicates = findDuplicates(request.getTitle(), request.getDescription());
+            boolean isDuplicate = !duplicates.isEmpty();
+
+            // Final validation of score
+            if (score == null || score < 0 || score > 100) {
+                System.err.println("Invalid score detected: " + score + ", using default 50.0");
+                score = 50.0;
+            }
+
+            return CategorizeResponse.builder()
+                    .ideaId(request.getIdeaId())
+                    .category(category)
+                    .tags(tags)
+                    .score(score)
+                    .isDuplicate(isDuplicate)
+                    .similarIdeaIds(duplicates)
+                    .build();
+
+        } catch (Exception e) {
+            System.err.println("Error in AI categorization: " + e.getMessage());
+            e.printStackTrace();
+
+            // Return a fallback response
+            return CategorizeResponse.builder()
+                    .ideaId(request.getIdeaId())
+                    .category("General")
+                    .tags(Arrays.asList("general"))
+                    .score(50.0)
+                    .isDuplicate(false)
+                    .similarIdeaIds(new ArrayList<>())
+                    .build();
+        }
     }
 
     public List<UUID> findDuplicates(String title, String description) {
@@ -45,15 +79,14 @@ public class AiService {
                     .uri("http://localhost:8081/ideas/duplicates?title={title}&description={description}",
                             title, description)
                     .retrieve()
-                    .bodyToMono(new ParameterizedTypeReference<List<UUID>>() {})
+                    .bodyToMono(new ParameterizedTypeReference<List<UUID>>() {
+                    })
                     .block();
         } catch (Exception e) {
             System.err.println("Failed to get duplicates from idea-service: " + e.getMessage());
             return new ArrayList<>();
         }
     }
-
-    
 
     private String determineCategory(String title, String description) {
         String combined = (title + " " + description).toLowerCase();
@@ -80,8 +113,8 @@ public class AiService {
         String combined = (title + " " + description).toLowerCase();
 
         String[] keywords = {"automation", "ai", "machine learning", "customer", "efficiency",
-                "cost", "quality", "innovation", "digital", "mobile", "web", "data", "analytics",
-                "cloud", "security", "user experience", "agile", "remote work"};
+            "cost", "quality", "innovation", "digital", "mobile", "web", "data", "analytics",
+            "cloud", "security", "user experience", "agile", "remote work"};
 
         for (String keyword : keywords) {
             if (combined.contains(keyword)) {
@@ -92,18 +125,60 @@ public class AiService {
         return tags.isEmpty() ? Arrays.asList("general") : tags;
     }
 
-   private Double calculateRuleScore(String title, String description) {
-        double score = 50.0;
+    private Double calculateRuleScore(String title, String description) {
+        double score = 40.0; // Base score
 
-        if (title.length() > 20 && title.length() < 100) score += 10;
-        if (description.length() > 100) score += 15;
+        // Title quality scoring
+        if (title != null && title.length() > 10 && title.length() < 100) {
+            score += 10;
+        }
+        if (title != null && title.length() > 20 && title.length() < 80) {
+            score += 5; // Bonus for optimal length
+        }
 
-        String combined = (title + " " + description).toLowerCase();
-        if (combined.contains("innovative") || combined.contains("new") || combined.contains("revolutionary")) score += 10;
-        if (combined.contains("save") || combined.contains("profit") || combined.contains("revenue")) score += 15;
+        // Description quality scoring
+        if (description != null && description.length() > 50) {
+            score += 10;
+        }
+        if (description != null && description.length() > 200) {
+            score += 10; // Bonus for detailed descriptions
+        }
+
+        String combined = ((title != null ? title : "") + " " + (description != null ? description : "")).toLowerCase();
+
+        // Innovation keywords
+        if (combined.contains("innovative") || combined.contains("new") || combined.contains("revolutionary")
+                || combined.contains("creative") || combined.contains("novel")) {
+            score += 8;
+        }
+
+        // Business impact keywords
+        if (combined.contains("save") || combined.contains("profit") || combined.contains("revenue")
+                || combined.contains("efficiency") || combined.contains("improve")) {
+            score += 12;
+        }
+
+        // Technology keywords
+        if (combined.contains("automation") || combined.contains("ai") || combined.contains("digital")
+                || combined.contains("technology") || combined.contains("system")) {
+            score += 8;
+        }
+
+        // Customer focus keywords
+        if (combined.contains("customer") || combined.contains("user") || combined.contains("experience")
+                || combined.contains("satisfaction")) {
+            score += 10;
+        }
+
+        // Sustainability keywords
+        if (combined.contains("sustainable") || combined.contains("environment") || combined.contains("green")
+                || combined.contains("eco")) {
+            score += 6;
+        }
 
         return Math.min(score, 100.0);
     }
+
     private Double calculateAiScore(String title, String description) {
         String prompt = """
             Rate this idea from 0 to 100 based on creativity, usefulness, and clarity.
@@ -113,44 +188,152 @@ public class AiService {
             """.formatted(title, description);
 
         try {
-            String response = webClientBuilder.build()
+            System.out.println("Calling Gemini API for scoring...");
+
+            // Correct Gemini API request format
+            Map<String, Object> requestBody = Map.of(
+                    "contents", List.of(
+                            Map.of("parts", List.of(
+                                    Map.of("text", prompt)
+                            ))
+                    )
+            );
+
+            System.out.println("Request body: " + requestBody);
+
+            Map<String, Object> response = webClientBuilder.build()
                     .post()
                     .uri("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyBKqgWYxMjoOZfRJkfhHHxBAF978LD7Oqo")
-                    .bodyValue(Map.of("prompt", prompt))
+                    .header("Content-Type", "application/json")
+                    .bodyValue(requestBody)
                     .retrieve()
-                    .bodyToMono(String.class)
+                    .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
+                    })
                     .block();
 
-            return Double.parseDouble(response.trim());
+            System.out.println("Gemini API response: " + response);
+
+            // Parse the response to extract the numeric score
+            Double score = parseGeminiResponse(response);
+            System.out.println("Parsed AI score: " + score);
+            return score;
+
         } catch (Exception e) {
             System.err.println("AI scoring failed: " + e.getMessage());
-            return 50.0; // default neutral score
+            e.printStackTrace();
+            return calculateRuleScore(title, description); // fallback to rule-based score
         }
     }
-    private Double calculateScore(String title, String description) {
-        double ruleScore = calculateRuleScore(title, description);
-        double aiScore = calculateAiScore(title, description);
 
-        // Weighted average: 60% rule, 40% AI (you can adjust)
-        double finalScore = (0.6 * ruleScore) + (0.4 * aiScore);
-
-        // Cap at 100
-        return Math.min(finalScore, 100.0);
+    @SuppressWarnings("unchecked")
+    private Double parseGeminiResponse(Map<String, Object> response) {
+        try {
+            List<Map<String, Object>> candidates = (List<Map<String, Object>>) response.get("candidates");
+            if (candidates != null && !candidates.isEmpty()) {
+                Map<String, Object> content = (Map<String, Object>) candidates.get(0).get("content");
+                if (content != null) {
+                    List<Map<String, Object>> parts = (List<Map<String, Object>>) content.get("parts");
+                    if (parts != null && !parts.isEmpty()) {
+                        String text = (String) parts.get(0).get("text");
+                        if (text != null) {
+                            return extractNumericScore(text.trim());
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to parse Gemini response: " + e.getMessage());
+        }
+        return 50.0; // default score if parsing fails
     }
 
+    private Double extractNumericScore(String text) {
+        System.out.println("Extracting numeric score from: '" + text + "'");
+        
+        try {
+            // First try to parse as a simple number
+            String cleanText = text.replaceAll("[^0-9.]", "");
+            if (!cleanText.isEmpty()) {
+                double score = Double.parseDouble(cleanText);
+                System.out.println("Parsed simple number: " + score);
+                
+                // If the score is greater than 100, it might be out of a different scale
+                if (score > 100) {
+                    System.out.println("Score > 100, treating as percentage and capping at 100");
+                    score = 100.0;
+                }
+                
+                // Ensure score is within valid range
+                double finalScore = Math.max(0.0, Math.min(100.0, score));
+                System.out.println("Final score after bounds checking: " + finalScore);
+                return finalScore;
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Failed to parse as simple number, trying fraction format");
+            
+            // Try to extract number from patterns like "85/100", "7.5 out of 10", etc.
+            if (text.contains("/")) {
+                String[] parts = text.split("/");
+                if (parts.length == 2) {
+                    try {
+                        double numerator = Double.parseDouble(parts[0].replaceAll("[^0-9.]", ""));
+                        double denominator = Double.parseDouble(parts[1].replaceAll("[^0-9.]", ""));
+                        System.out.println("Parsed fraction: " + numerator + "/" + denominator);
+                        
+                        if (denominator > 0) {
+                            // Convert to 0-100 scale
+                            double convertedScore = (numerator / denominator) * 100;
+                            double finalScore = Math.max(0.0, Math.min(100.0, convertedScore));
+                            System.out.println("Converted fraction to 0-100 scale: " + finalScore);
+                            return finalScore;
+                        }
+                    } catch (NumberFormatException ex) {
+                        System.err.println("Failed to parse fraction format: " + text);
+                    }
+                }
+            }
+        }
+        
+        System.out.println("All parsing failed, returning default score: 50.0");
+        return 50.0; // default score if all parsing attempts fail
+    }
 
+    private Double calculateScore(String title, String description) {
+        double ruleScore = calculateRuleScore(title, description);
 
+        try {
+            double aiScore = calculateAiScore(title, description);
+
+            // If AI score is reasonable (between 0-100), use weighted average
+            if (aiScore >= 0 && aiScore <= 100) {
+                // Weighted average: 60% rule, 40% AI
+                double finalScore = (0.6 * ruleScore) + (0.4 * aiScore);
+                return Math.min(finalScore, 100.0);
+            } else {
+                System.out.println("AI score out of range (" + aiScore + "), using rule-based score only");
+                return ruleScore;
+            }
+        } catch (Exception e) {
+            System.err.println("AI scoring failed, using rule-based score only: " + e.getMessage());
+            return ruleScore;
+        }
+    }
 
     private void updateIdeaWithAiData(UUID ideaId, Double score) {
         try {
+            System.out.println("Updating idea " + ideaId + " with AI score: " + score);
+
             webClientBuilder.build()
                     .put()
                     .uri("http://localhost:8081/ideas/" + ideaId + "/ai-score?score=" + score)
                     .retrieve()
                     .bodyToMono(Void.class)
                     .block();
+
+            System.out.println("Successfully updated idea AI score");
         } catch (Exception e) {
-            System.err.println("Failed to update idea AI score: " + e.getMessage());
+            System.err.println("Failed to update idea AI score for idea " + ideaId + ": " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }
