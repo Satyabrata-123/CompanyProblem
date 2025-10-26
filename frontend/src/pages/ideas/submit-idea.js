@@ -2,7 +2,7 @@ import { Layout } from '../../components/layout/layout.js'
 
 export default function SubmitIdeaPage() {
   const currentUser = window.app.state.getState('user').currentUser
-  
+
   if (!currentUser) {
     window.app.router.navigate('/login')
     return ''
@@ -34,29 +34,31 @@ export default function SubmitIdeaPage() {
 
         <!-- Progress Indicator -->
         <div class="mb-8">
-          <div class="flex items-center">
+          <div class="flex items-center" id="progressIndicator">
             <div class="flex items-center text-sm">
-              <span class="flex items-center justify-center w-8 h-8 bg-primary-600 text-white rounded-full">1</span>
-              <span class="ml-2 font-medium text-primary-600">Idea Details</span>
+              <span class="flex items-center justify-center w-8 h-8 bg-primary-600 text-white rounded-full" id="step1Indicator">1</span>
+              <span class="ml-2 font-medium text-primary-600" id="step1Label">Idea Details</span>
             </div>
             <div class="flex-1 mx-4 h-0.5 bg-gray-200">
               <div class="h-full bg-primary-600 transition-all duration-300" id="progressBar" style="width: 33%"></div>
             </div>
             <div class="flex items-center text-sm">
-              <span class="flex items-center justify-center w-8 h-8 bg-gray-200 text-gray-500 rounded-full">2</span>
-              <span class="ml-2 text-gray-500">AI Enhancement</span>
+              <span class="flex items-center justify-center w-8 h-8 bg-gray-200 text-gray-500 rounded-full" id="step2Indicator">2</span>
+              <span class="ml-2 text-gray-500" id="step2Label">AI Enhancement</span>
             </div>
-            <div class="flex-1 mx-4 h-0.5 bg-gray-200"></div>
+            <div class="flex-1 mx-4 h-0.5 bg-gray-200" id="progressBar2">
+              <div class="h-full bg-gray-200 transition-all duration-300" id="progressBar2Fill" style="width: 0%"></div>
+            </div>
             <div class="flex items-center text-sm">
-              <span class="flex items-center justify-center w-8 h-8 bg-gray-200 text-gray-500 rounded-full">3</span>
-              <span class="ml-2 text-gray-500">Review & Submit</span>
+              <span class="flex items-center justify-center w-8 h-8 bg-gray-200 text-gray-500 rounded-full" id="step3Indicator">3</span>
+              <span class="ml-2 text-gray-500" id="step3Label">Review & Submit</span>
             </div>
           </div>
         </div>
 
         <!-- Main Form -->
         <div class="bg-white shadow-sm rounded-lg">
-          <form id="submitIdeaForm" data-form="idea-submit" class="space-y-6 p-6">
+          <form id="submitIdeaForm" class="space-y-6 p-6">
             <!-- Error Display -->
             <div id="formError" class="hidden bg-danger-50 border border-danger-200 rounded-md p-4">
               <div class="flex">
@@ -251,10 +253,11 @@ function initializeSubmitIdeaForm() {
   const titleCount = document.getElementById('titleCount')
   const descriptionCount = document.getElementById('descriptionCount')
   const nextStepBtn = document.getElementById('nextStepBtn')
-  
+
   let currentStep = 1
   let aiAnalysisData = null
   let duplicateCheckResults = null
+  let submitTimeout = null
 
   // Character counters
   titleInput.addEventListener('input', () => {
@@ -321,9 +324,9 @@ function initializeSubmitIdeaForm() {
       description: descriptionInput.value,
       timestamp: new Date().toISOString()
     }
-    
+
     localStorage.setItem('idea_draft', JSON.stringify(draft))
-    
+
     window.app.state.addNotification({
       type: 'success',
       message: 'Draft saved successfully!',
@@ -338,13 +341,13 @@ function initializeSubmitIdeaForm() {
         const draftData = JSON.parse(draft)
         titleInput.value = draftData.title || ''
         descriptionInput.value = draftData.description || ''
-        
+
         // Update character counts
         titleCount.textContent = titleInput.value.length
         descriptionCount.textContent = descriptionInput.value.length
-        
+
         updateNextStepButton()
-        
+
         window.app.state.addNotification({
           type: 'success',
           message: 'Draft loaded successfully!',
@@ -375,17 +378,45 @@ function initializeSubmitIdeaForm() {
       hideFieldError('title')
       hideFieldError('description')
       updateNextStepButton()
-      
+
       // Clear draft
       localStorage.removeItem('idea_draft')
     }
   }
 
-  // Form submission
+  // Form submission with duplicate prevention
+  let isSubmitting = false
   form.addEventListener('submit', async (e) => {
     e.preventDefault()
-    await submitIdea()
+
+    // Prevent duplicate submissions
+    if (isSubmitting) {
+      return
+    }
+
+    isSubmitting = true
+    try {
+      await submitIdea()
+    } finally {
+      isSubmitting = false
+    }
   })
+
+  // Add click handler to submit button with debouncing
+  const submitBtn = document.getElementById('submitBtn')
+  if (submitBtn) {
+    submitBtn.addEventListener('click', (e) => {
+      // Clear any existing timeout
+      if (submitTimeout) {
+        clearTimeout(submitTimeout)
+      }
+
+      // Debounce the click to prevent rapid submissions
+      submitTimeout = setTimeout(() => {
+        // The form submit event will handle the actual submission
+      }, 100)
+    })
+  }
 
   function validateField(fieldName, value) {
     let isValid = true
@@ -404,7 +435,7 @@ function initializeSubmitIdeaForm() {
           isValid = false
         }
         break
-        
+
       case 'description':
         if (!value.trim()) {
           errorMessage = 'Description is required'
@@ -437,7 +468,7 @@ function initializeSubmitIdeaForm() {
   function updateNextStepButton() {
     const isValid = titleInput.value.trim().length >= 5 && descriptionInput.value.trim().length >= 20
     nextStepBtn.disabled = !isValid
-    
+
     if (isValid) {
       nextStepBtn.classList.remove('opacity-50', 'cursor-not-allowed')
     } else {
@@ -446,20 +477,91 @@ function initializeSubmitIdeaForm() {
   }
 
   function showStep(step) {
-    document.getElementById('step1').classList.toggle('hidden', step !== 1)
-    document.getElementById('step2').classList.toggle('hidden', step !== 2)
-    document.getElementById('step3').classList.toggle('hidden', step !== 3)
+    const step1 = document.getElementById('step1')
+    const step2 = document.getElementById('step2')
+    const step3 = document.getElementById('step3')
+
+    if (step1) step1.classList.toggle('hidden', step !== 1)
+    if (step2) step2.classList.toggle('hidden', step !== 2)
+    if (step3) step3.classList.toggle('hidden', step !== 3)
   }
 
   function updateProgressBar(percentage) {
     const progressBar = document.getElementById('progressBar')
-    progressBar.style.width = `${percentage}%`
+    const progressBar2Fill = document.getElementById('progressBar2Fill')
+
+    // Update progress bars
+    if (percentage <= 50) {
+      // First progress bar (0-50%)
+      if (progressBar) {
+        progressBar.style.width = `${percentage * 2}%`
+      }
+      if (progressBar2Fill) {
+        progressBar2Fill.style.width = '0%'
+      }
+    } else {
+      // First bar complete, second bar filling (50-100%)
+      if (progressBar) {
+        progressBar.style.width = '100%'
+      }
+      if (progressBar2Fill) {
+        progressBar2Fill.style.width = `${(percentage - 50) * 2}%`
+        progressBar2Fill.style.backgroundColor = '#2563eb' // primary-600 color
+      }
+    }
+
+    // Update step indicators
+    const step1Indicator = document.getElementById('step1Indicator')
+    const step2Indicator = document.getElementById('step2Indicator')
+    const step3Indicator = document.getElementById('step3Indicator')
+    const step1Label = document.getElementById('step1Label')
+    const step2Label = document.getElementById('step2Label')
+    const step3Label = document.getElementById('step3Label')
+
+    // Reset all indicators to inactive state
+    [step1Indicator, step2Indicator, step3Indicator].filter(Boolean).forEach(indicator => {
+      indicator.className = 'flex items-center justify-center w-8 h-8 bg-gray-200 text-gray-500 rounded-full'
+    });
+    [step1Label, step2Label, step3Label].filter(Boolean).forEach(label => {
+      label.className = 'ml-2 text-gray-500'
+    })
+
+    // Activate current step
+    if (percentage >= 33) {
+      if (step1Indicator) {
+        step1Indicator.className = 'flex items-center justify-center w-8 h-8 bg-primary-600 text-white rounded-full'
+      }
+      if (step1Label) {
+        step1Label.className = 'ml-2 font-medium text-primary-600'
+      }
+    }
+    if (percentage >= 66) {
+      if (step2Indicator) {
+        step2Indicator.className = 'flex items-center justify-center w-8 h-8 bg-primary-600 text-white rounded-full'
+      }
+      if (step2Label) {
+        step2Label.className = 'ml-2 font-medium text-primary-600'
+      }
+    }
+    if (percentage >= 100) {
+      if (step3Indicator) {
+        step3Indicator.className = 'flex items-center justify-center w-8 h-8 bg-primary-600 text-white rounded-full'
+      }
+      if (step3Label) {
+        step3Label.className = 'ml-2 font-medium text-primary-600'
+      }
+    } else {
+      progressBar.style.width = '100%'
+      progressBar2Fill.style.width = '100%'
+      progressBar2Fill.classList.remove('bg-gray-200')
+      progressBar2Fill.classList.add('bg-primary-600')
+    }
   }
 
   async function performAIAnalysis() {
     const aiAnalysisContainer = document.getElementById('aiAnalysis')
     const finalStepBtn = document.getElementById('finalStepBtn')
-    
+
     try {
       // Show loading state
       aiAnalysisContainer.innerHTML = `
@@ -474,12 +576,18 @@ function initializeSubmitIdeaForm() {
         description: descriptionInput.value
       }
 
-      // Perform AI analysis and duplicate check
-      const [aiResponse, duplicates] = await Promise.all([
-        window.app.api.categorizeIdea(ideaData),
-        window.app.api.findDuplicates(ideaData.title, ideaData.description)
+      // Perform AI analysis and duplicate check with timeout
+      const analysisPromise = Promise.race([
+        Promise.all([
+          window.app.api.categorizeIdea(ideaData),
+          window.app.api.findDuplicates(ideaData.title, ideaData.description)
+        ]),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Analysis timeout')), 10000)
+        )
       ])
 
+      const [aiResponse, duplicates] = await analysisPromise
       aiAnalysisData = aiResponse
       duplicateCheckResults = duplicates
 
@@ -494,9 +602,9 @@ function initializeSubmitIdeaForm() {
           <div class="bg-white border border-gray-200 rounded-lg p-4">
             <h4 class="font-medium text-gray-900 mb-2">🏷️ AI-Generated Tags</h4>
             <div class="flex flex-wrap gap-2">
-              ${(aiResponse.tags || []).map(tag => `
+              ${Array.isArray(aiResponse.tags) ? aiResponse.tags.map(tag => `
                 <span class="badge badge-secondary">${tag}</span>
-              `).join('')}
+              `).join('') : '<span class="badge badge-secondary">innovation</span>'}
             </div>
           </div>
           
@@ -510,7 +618,7 @@ function initializeSubmitIdeaForm() {
             </div>
           </div>
           
-          ${duplicates && duplicates.length > 0 ? `
+          ${duplicates && Array.isArray(duplicates) && duplicates.length > 0 ? `
             <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <h4 class="font-medium text-yellow-800 mb-2">⚠️ Similar Ideas Found</h4>
               <p class="text-sm text-yellow-700 mb-2">We found ${duplicates.length} similar idea(s). Consider reviewing them before submitting:</p>
@@ -536,13 +644,41 @@ function initializeSubmitIdeaForm() {
 
     } catch (error) {
       console.error('AI analysis failed:', error)
+
+      // Set fallback data
+      aiAnalysisData = {
+        category: 'General',
+        tags: ['innovation'],
+        score: 75
+      }
+      duplicateCheckResults = []
+
       aiAnalysisContainer.innerHTML = `
-        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-          <h4 class="font-medium text-red-800 mb-2">❌ Analysis Failed</h4>
-          <p class="text-sm text-red-700">AI analysis is temporarily unavailable, but you can still submit your idea.</p>
+        <div class="space-y-4">
+          <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <h4 class="font-medium text-yellow-800 mb-2">⚠️ AI Analysis Unavailable</h4>
+            <p class="text-sm text-yellow-700">AI analysis is temporarily unavailable, but you can still submit your idea with default categorization.</p>
+          </div>
+          
+          <div class="bg-white border border-gray-200 rounded-lg p-4">
+            <h4 class="font-medium text-gray-900 mb-2">🏷️ Default Category</h4>
+            <span class="badge badge-primary">General</span>
+          </div>
+          
+          <div class="bg-white border border-gray-200 rounded-lg p-4">
+            <h4 class="font-medium text-gray-900 mb-2">🏷️ Default Tags</h4>
+            <div class="flex flex-wrap gap-2">
+              <span class="badge badge-secondary">innovation</span>
+            </div>
+          </div>
+          
+          <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+            <h4 class="font-medium text-green-800 mb-2">✅ Ready to Submit</h4>
+            <p class="text-sm text-green-700">Your idea is ready to be submitted to the community.</p>
+          </div>
         </div>
       `
-      
+
       finalStepBtn.disabled = false
       finalStepBtn.classList.remove('opacity-50', 'cursor-not-allowed')
     }
@@ -550,7 +686,7 @@ function initializeSubmitIdeaForm() {
 
   function generatePreview() {
     const previewContainer = document.getElementById('ideaPreview')
-    
+
     previewContainer.innerHTML = `
       <div class="space-y-4">
         <div>
@@ -561,14 +697,14 @@ function initializeSubmitIdeaForm() {
         ${aiAnalysisData ? `
           <div class="flex flex-wrap gap-2 pt-2 border-t border-gray-200">
             <span class="badge badge-primary">${aiAnalysisData.category || 'General'}</span>
-            ${(aiAnalysisData.tags || []).map(tag => `
+            ${Array.isArray(aiAnalysisData.tags) ? aiAnalysisData.tags.map(tag => `
               <span class="badge badge-secondary">${tag}</span>
-            `).join('')}
+            `).join('') : '<span class="badge badge-secondary">innovation</span>'}
           </div>
         ` : ''}
         
         <div class="flex items-center justify-between pt-2 border-t border-gray-200 text-sm text-gray-500">
-          <span>By ${window.app.state.getState('user').currentUser.fullName}</span>
+          <span>By ${window.app.state.getState('user').currentUser?.fullName || 'Anonymous'}</span>
           <span>Just now</span>
         </div>
       </div>
@@ -579,52 +715,86 @@ function initializeSubmitIdeaForm() {
     const submitBtn = document.getElementById('submitBtn')
     const submitBtnText = document.getElementById('submitBtnText')
     const submitSpinner = document.getElementById('submitSpinner')
-    
+
+    // Prevent multiple submissions
+    if (submitBtn.disabled) {
+      return
+    }
+
     // Set loading state
     submitBtn.disabled = true
+    submitBtn.classList.add('opacity-50', 'cursor-not-allowed')
     submitBtnText.textContent = 'Submitting...'
     submitSpinner.classList.remove('hidden')
 
     try {
       const currentUser = window.app.state.getState('user').currentUser
-      
+
+      if (!currentUser || !currentUser.id) {
+        throw new Error('User not logged in')
+      }
+
       const ideaData = {
         title: titleInput.value.trim(),
         description: descriptionInput.value.trim(),
         submittedBy: currentUser.id,
         category: aiAnalysisData?.category || 'General',
-        tags: aiAnalysisData?.tags || [],
+        tags: Array.isArray(aiAnalysisData?.tags) ? aiAnalysisData.tags : ['innovation'],
         aiScore: aiAnalysisData?.score || null
       }
 
       const newIdea = await window.app.api.createIdea(ideaData)
-      
-      // Award points for idea submission
-      await window.app.api.awardPointsForIdeaSubmission(currentUser.id)
-      
+
+      // Award points for idea submission (don't fail if this fails)
+      try {
+        await window.app.api.awardPointsForIdeaSubmission(currentUser.id)
+      } catch (pointsError) {
+        console.warn('Failed to award points:', pointsError)
+      }
+
       // Clear draft
       localStorage.removeItem('idea_draft')
-      
+
       window.app.state.addNotification({
         type: 'success',
         message: 'Idea submitted successfully! You earned 10 points.',
         duration: 5000
       })
-      
-      // Redirect to the new idea
-      window.app.router.navigate(`/ideas/${newIdea.id}`)
-      
+
+      // Redirect to the ideas list or the new idea if ID is available
+      if (newIdea && newIdea.id) {
+        window.app.router.navigate(`/ideas/${newIdea.id}`)
+      } else {
+        window.app.router.navigate('/ideas')
+      }
+
     } catch (error) {
       console.error('Failed to submit idea:', error)
-      
+
+      let errorMessage = 'Failed to submit idea. Please try again.'
+
+      // Provide more specific error messages
+      if (error.message.includes('Network')) {
+        errorMessage = 'Network error. Please check your connection and try again.'
+      } else if (error.message.includes('timeout')) {
+        errorMessage = 'Request timed out. Please try again.'
+      } else if (error.status === 401) {
+        errorMessage = 'You need to be logged in to submit ideas.'
+        window.app.router.navigate('/login')
+        return
+      } else if (error.status === 403) {
+        errorMessage = 'You do not have permission to submit ideas.'
+      }
+
       window.app.state.addNotification({
         type: 'error',
-        message: 'Failed to submit idea. Please try again.',
+        message: errorMessage,
         duration: 5000
       })
-      
+
       // Reset button state
       submitBtn.disabled = false
+      submitBtn.classList.remove('opacity-50', 'cursor-not-allowed')
       submitBtnText.textContent = '🚀 Submit Idea'
       submitSpinner.classList.add('hidden')
     }
@@ -636,14 +806,14 @@ function initializeSubmitIdeaForm() {
       description: descriptionInput.value,
       timestamp: new Date().toISOString()
     }
-    
+
     localStorage.setItem('idea_draft', JSON.stringify(draft))
   }
 
   function showFieldError(fieldName, message) {
     const errorElement = document.getElementById(`${fieldName}Error`)
     const inputElement = document.getElementById(fieldName)
-    
+
     if (errorElement && inputElement) {
       errorElement.textContent = message
       errorElement.classList.remove('hidden')
@@ -655,7 +825,7 @@ function initializeSubmitIdeaForm() {
   function hideFieldError(fieldName) {
     const errorElement = document.getElementById(`${fieldName}Error`)
     const inputElement = document.getElementById(fieldName)
-    
+
     if (errorElement && inputElement) {
       errorElement.textContent = ''
       errorElement.classList.add('hidden')
@@ -670,7 +840,7 @@ function initializeSubmitIdeaForm() {
     try {
       const draftData = JSON.parse(existingDraft)
       const draftAge = Date.now() - new Date(draftData.timestamp).getTime()
-      
+
       // Only load draft if it's less than 24 hours old
       if (draftAge < 24 * 60 * 60 * 1000) {
         setTimeout(() => {

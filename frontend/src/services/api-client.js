@@ -8,6 +8,7 @@ export class ApiClient {
     this.retryDelay = 1000
     this.requestQueue = []
     this.isOnline = navigator.onLine
+    this.pendingRequests = new Map() // Track pending requests to prevent duplicates
     
     // Listen for online/offline events
     window.addEventListener('online', () => {
@@ -27,45 +28,71 @@ export class ApiClient {
       ...options
     }
 
+    // Create unique request key for deduplication (for POST requests)
+    const requestKey = options.method === 'POST' ? 
+      `${endpoint}-${JSON.stringify(options.body)}` : 
+      `${endpoint}-${options.method || 'GET'}`
+    
+    // Check if this exact request is already pending (for POST requests)
+    if (options.method === 'POST' && this.pendingRequests.has(requestKey)) {
+      console.warn('Duplicate request detected, returning existing promise')
+      return this.pendingRequests.get(requestKey)
+    }
+
     // Add request ID for tracking
     const requestId = Date.now() + Math.random()
     
-    try {
-      // Check if online
-      if (!this.isOnline && options.method !== 'GET') {
-        return this.queueRequest(endpoint, options)
-      }
-
-      const response = await this.makeRequestWithRetry(url, config, this.retryAttempts)
-      
-      // Handle different response types
-      if (!response.ok) {
-        const error = await this.handleErrorResponse(response)
-        throw error
-      }
-
-      // Handle empty responses
-      if (response.status === 204) {
-        return null 
-      }
-
-      // Try to parse JSON, fallback to text
-      const contentType = response.headers.get('content-type')
-      if (contentType && contentType.includes('application/json')) {
-        return await response.json()
-      } else {
-        return await response.text()
-      }
-    } catch (error) {
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        // Network error
-        if (!this.isOnline) {
-          throw new Error('You are offline. Please check your connection.')
+    // Create the request promise
+    const requestPromise = (async () => {
+      try {
+        // Check if online
+        if (!this.isOnline && options.method !== 'GET') {
+          return this.queueRequest(endpoint, options)
         }
-        throw new Error('Network error. Please check your connection.')
+
+        const response = await this.makeRequestWithRetry(url, config, this.retryAttempts)
+      
+        // Handle different response types
+        if (!response.ok) {
+          const error = await this.handleErrorResponse(response)
+          throw error
+        }
+
+        // Handle empty responses
+        if (response.status === 204) {
+          return null 
+        }
+
+        // Try to parse JSON, fallback to text
+        const contentType = response.headers.get('content-type')
+        if (contentType && contentType.includes('application/json')) {
+          return await response.json()
+        } else {
+          return await response.text()
+        }
+      } catch (error) {
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+          // Network error
+          if (!this.isOnline) {
+            throw new Error('You are offline. Please check your connection.')
+          }
+          throw new Error('Network error. Please check your connection.')
+        }
+        throw error
+      } finally {
+        // Remove from pending requests when done
+        if (options.method === 'POST') {
+          this.pendingRequests.delete(requestKey)
+        }
       }
-      throw error
+    })()
+
+    // Store the promise for POST requests to prevent duplicates
+    if (options.method === 'POST') {
+      this.pendingRequests.set(requestKey, requestPromise)
     }
+
+    return requestPromise
   }
 
   async makeRequestWithRetry(url, config, attemptsLeft) {
