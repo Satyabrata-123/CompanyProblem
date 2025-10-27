@@ -27,6 +27,8 @@ export default async function IdeasListPage() {
   let categories = []
   
   try {
+    console.log('🔍 Loading ideas with filters:', filters)
+    
     if (isUserIdeas) {
       ideas = await window.app.api.getIdeasByUser(currentUser.id)
     } else if (filters.status !== 'all') {
@@ -34,6 +36,9 @@ export default async function IdeasListPage() {
     } else {
       ideas = await window.app.api.getAllIdeas()
     }
+    
+    console.log('✅ Ideas loaded:', ideas.length, 'ideas')
+    console.log('📊 Sample idea IDs:', ideas.slice(0, 3).map(idea => ({ id: idea.id, title: idea.title })))
     
     // Apply additional filters
     ideas = applyFilters(ideas, filters)
@@ -43,13 +48,55 @@ export default async function IdeasListPage() {
     categories = [...new Set(ideas.map(idea => idea.category).filter(Boolean))]
     
   } catch (error) {
-    console.error('Failed to load ideas:', error)
+    console.error('❌ Failed to load ideas:', error)
   }
 
   // Initialize page interactions after render
   setTimeout(() => {
     initializeIdeasListPage(ideas, filters, isUserIdeas)
   }, 0)
+
+  // Add debug function to window for testing
+  window.debugIdeas = {
+    async testIdeaAPI() {
+      console.log('🧪 Testing Idea API...')
+      try {
+        const allIdeas = await window.app.api.getAllIdeas()
+        console.log('✅ getAllIdeas:', allIdeas.length, 'ideas')
+        
+        if (allIdeas.length > 0) {
+          const firstIdea = allIdeas[0]
+          console.log('🔍 Testing getIdeaById with first idea:', firstIdea.id)
+          const ideaDetail = await window.app.api.getIdeaById(firstIdea.id)
+          console.log('✅ getIdeaById:', ideaDetail)
+          return { success: true, ideas: allIdeas.length, testIdea: ideaDetail }
+        } else {
+          console.log('⚠️ No ideas found to test with')
+          return { success: true, ideas: 0, message: 'No ideas to test with' }
+        }
+      } catch (error) {
+        console.error('❌ API Test failed:', error)
+        return { success: false, error: error.message }
+      }
+    },
+    
+    async checkServices() {
+      console.log('🔍 Checking backend services...')
+      const services = [
+        { name: 'API Gateway', url: '/api/ideas' },
+        { name: 'Idea Service', url: '/api/ideas' }
+      ]
+      
+      for (const service of services) {
+        try {
+          const response = await fetch(service.url)
+          console.log(`${response.ok ? '✅' : '❌'} ${service.name}: ${response.status}`)
+        } catch (error) {
+          console.error(`❌ ${service.name}: ${error.message}`)
+        }
+      }
+    }
+  }
 
   const content = `
     <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">

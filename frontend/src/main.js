@@ -28,13 +28,13 @@ class App {
     try {
       // Initialize state manager
       await this.initializeState()
-      
+
       // Set up router
       this.setupRouter()
-      
+
       // Start the application
       this.start()
-      
+
       console.log('Innovation Platform initialized successfully')
     } catch (error) {
       console.error('Failed to initialize application:', error)
@@ -76,12 +76,12 @@ class App {
 
     // Configure router
     window.app.router.configure(routes)
-    
+
     // Set up authentication guard
     window.app.router.beforeEach((to, from, next) => {
       const isAuthenticated = window.app.state.getState('user').isAuthenticated
       const publicRoutes = ['/login', '/register']
-      
+
       if (!isAuthenticated && !publicRoutes.includes(to)) {
         next('/login')
       } else if (isAuthenticated && publicRoutes.includes(to)) {
@@ -95,7 +95,7 @@ class App {
   start() {
     // Start the router
     window.app.router.start()
-    
+
     // Set up global error handling
     window.addEventListener('unhandledrejection', (event) => {
       console.error('Unhandled promise rejection:', event.reason)

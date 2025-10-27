@@ -18,18 +18,36 @@ export default async function IdeaDetailPage(params) {
   let isOwner = false
 
   try {
-    // Load idea details and engagement data
-    const [ideaData, commentsData, votesData, userVoteData] = await Promise.all([
-      window.app.api.getIdeaById(ideaId),
-      window.app.api.getCommentsForIdea(ideaId),
-      window.app.api.getVotesForIdea(ideaId),
-      window.app.api.getUserVoteForIdea(ideaId, currentUser.id).catch(() => null)
-    ])
+    console.log('🔍 Loading idea with ID:', ideaId)
+    
+    // Load idea details first
+    idea = await window.app.api.getIdeaById(ideaId)
+    console.log('✅ Idea loaded:', idea)
+    
+    if (!idea) {
+      throw new Error('Idea not found')
+    }
+    
+    // Load engagement data
+    try {
+      const [commentsData, votesData, userVoteData] = await Promise.all([
+        window.app.api.getCommentsForIdea(ideaId).catch(() => []),
+        window.app.api.getVotesForIdea(ideaId).catch(() => []),
+        window.app.api.getUserVoteForIdea(ideaId, currentUser.id).catch(() => null)
+      ])
 
-    idea = ideaData
-    comments = commentsData || []
-    votes = votesData || []
-    userVote = userVoteData
+      comments = commentsData || []
+      votes = votesData || []
+      userVote = userVoteData
+      console.log('✅ Engagement data loaded:', { comments: comments.length, votes: votes.length, userVote })
+    } catch (engagementError) {
+      console.warn('⚠️ Failed to load engagement data:', engagementError)
+      // Continue with empty engagement data
+      comments = []
+      votes = []
+      userVote = null
+    }
+    
     isOwner = idea.submittedBy === currentUser.id
 
     // Update state
@@ -39,14 +57,30 @@ export default async function IdeaDetailPage(params) {
     }
 
   } catch (error) {
-    console.error('Failed to load idea:', error)
+    console.error('❌ Failed to load idea:', error)
+    console.error('Error details:', {
+      ideaId,
+      errorMessage: error.message,
+      errorStack: error.stack
+    })
     return Layout(`
       <div class="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
         <div class="px-4 py-6 sm:px-0 text-center">
           <div class="text-6xl mb-4">❌</div>
           <h1 class="text-2xl font-bold text-gray-900 mb-4">Idea Not Found</h1>
-          <p class="text-gray-600 mb-6">The idea you're looking for doesn't exist or has been removed.</p>
-          <a href="#/ideas" class="btn-primary">← Back to Ideas</a>
+          <p class="text-gray-600 mb-4">The idea you're looking for doesn't exist or has been removed.</p>
+          <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 text-left max-w-md mx-auto">
+            <h3 class="font-medium text-yellow-800 mb-2">🔧 Debug Information</h3>
+            <p class="text-sm text-yellow-700">
+              <strong>Idea ID:</strong> ${ideaId}<br>
+              <strong>Error:</strong> ${error.message}<br>
+              <strong>User:</strong> ${currentUser?.fullName || 'Unknown'}
+            </p>
+          </div>
+          <div class="space-x-4">
+            <a href="#/ideas" class="btn-primary">← Back to Ideas</a>
+            <button onclick="window.location.reload()" class="btn-secondary">🔄 Retry</button>
+          </div>
         </div>
       </div>
     `)

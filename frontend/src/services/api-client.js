@@ -220,7 +220,15 @@ export class ApiClient {
   }
 
   async getIdeaById(id) {
-    return this.get(`/ideas/${id}`)
+    console.log('🔍 API: Getting idea by ID:', id)
+    try {
+      const result = await this.get(`/ideas/${id}`)
+      console.log('✅ API: Idea retrieved:', result)
+      return result
+    } catch (error) {
+      console.error('❌ API: Failed to get idea by ID:', id, error)
+      throw error
+    }
   }
 
   async getIdeasByUser(userId) {
