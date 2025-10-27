@@ -56,7 +56,7 @@ export default function SubmitIdeaPage() {
 
         <!-- Main Form -->
         <div class="bg-white shadow-sm rounded-lg">
-          <form id="submitIdeaForm" data-form="idea-submit" class="space-y-6 p-6">
+          <form id="submitIdeaForm" class="space-y-6 p-6">
             <!-- Error Display -->
             <div id="formError" class="hidden bg-danger-50 border border-danger-200 rounded-md p-4">
               <div class="flex">
@@ -255,6 +255,7 @@ function initializeSubmitIdeaForm() {
   let currentStep = 1
   let aiAnalysisData = null
   let duplicateCheckResults = null
+  let submissionToken = null
 
   // Character counters
   titleInput.addEventListener('input', () => {
@@ -383,8 +384,18 @@ function initializeSubmitIdeaForm() {
 
   // Form submission with duplicate prevention
   let isSubmitting = false
+  let lastSubmitTime = 0
+  
   form.addEventListener('submit', async (e) => {
     e.preventDefault()
+    
+    // Debounce rapid submissions (prevent submissions within 1 second)
+    const now = Date.now()
+    if (now - lastSubmitTime < 1000) {
+      console.log('⚠️ Submission too rapid, ignoring')
+      return
+    }
+    lastSubmitTime = now
     
     // Prevent duplicate submissions
     if (isSubmitting) {
@@ -593,11 +604,17 @@ function initializeSubmitIdeaForm() {
     const submitBtnText = document.getElementById('submitBtnText')
     const submitSpinner = document.getElementById('submitSpinner')
     
+    // Generate unique submission token
+    const currentToken = Date.now() + '-' + Math.random()
+    
     // Prevent multiple submissions
-    if (submitBtn.disabled) {
-      console.log('⚠️ Submit button already disabled, preventing duplicate submission')
+    if (submitBtn.disabled || submissionToken) {
+      console.log('⚠️ Submit already in progress, preventing duplicate submission')
       return
     }
+    
+    // Set submission token
+    submissionToken = currentToken
     
     // Set loading state
     submitBtn.disabled = true
@@ -605,9 +622,7 @@ function initializeSubmitIdeaForm() {
     submitBtnText.textContent = 'Submitting...'
     submitSpinner.classList.remove('hidden')
     
-    console.log('🚀 Starting idea submission...')
-    
-    // Ensure we're in the final step
+    console.log('🚀 Starting idea submission with token:', currentToken)
     if (currentStep !== 3) {
       console.error('❌ Cannot submit idea - not in final step')
       submitBtn.disabled = false
@@ -618,6 +633,12 @@ function initializeSubmitIdeaForm() {
     }
 
     try {
+      // Double-check token hasn't changed (race condition protection)
+      if (submissionToken !== currentToken) {
+        console.log('⚠️ Submission token changed, aborting this submission')
+        return
+      }
+      
       const currentUser = window.app.state.getState('user').currentUser
       
       if (!currentUser || !currentUser.id) {
@@ -661,6 +682,9 @@ function initializeSubmitIdeaForm() {
         duration: 5000
       })
       
+      // Clear submission token before redirect
+      submissionToken = null
+      
       // Redirect to the new idea
       window.app.router.navigate(`/ideas/${newIdea.id}`)
       
@@ -678,6 +702,9 @@ function initializeSubmitIdeaForm() {
       submitBtn.classList.remove('opacity-50', 'cursor-not-allowed')
       submitBtnText.textContent = '🚀 Submit Idea'
       submitSpinner.classList.add('hidden')
+      
+      // Clear submission token
+      submissionToken = null
     }
   }
 
