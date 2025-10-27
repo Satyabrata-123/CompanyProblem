@@ -381,10 +381,23 @@ function initializeSubmitIdeaForm() {
     }
   }
 
-  // Form submission
+  // Form submission with duplicate prevention
+  let isSubmitting = false
   form.addEventListener('submit', async (e) => {
     e.preventDefault()
-    await submitIdea()
+    
+    // Prevent duplicate submissions
+    if (isSubmitting) {
+      console.log('⚠️ Submission already in progress, ignoring duplicate')
+      return
+    }
+    
+    isSubmitting = true
+    try {
+      await submitIdea()
+    } finally {
+      isSubmitting = false
+    }
   })
 
   function validateField(fieldName, value) {
@@ -580,27 +593,64 @@ function initializeSubmitIdeaForm() {
     const submitBtnText = document.getElementById('submitBtnText')
     const submitSpinner = document.getElementById('submitSpinner')
     
+    // Prevent multiple submissions
+    if (submitBtn.disabled) {
+      console.log('⚠️ Submit button already disabled, preventing duplicate submission')
+      return
+    }
+    
     // Set loading state
     submitBtn.disabled = true
+    submitBtn.classList.add('opacity-50', 'cursor-not-allowed')
     submitBtnText.textContent = 'Submitting...'
     submitSpinner.classList.remove('hidden')
+    
+    console.log('🚀 Starting idea submission...')
+    
+    // Ensure we're in the final step
+    if (currentStep !== 3) {
+      console.error('❌ Cannot submit idea - not in final step')
+      submitBtn.disabled = false
+      submitBtn.classList.remove('opacity-50', 'cursor-not-allowed')
+      submitBtnText.textContent = '🚀 Submit Idea'
+      submitSpinner.classList.add('hidden')
+      return
+    }
 
     try {
       const currentUser = window.app.state.getState('user').currentUser
+      
+      if (!currentUser || !currentUser.id) {
+        throw new Error('User not logged in')
+      }
       
       const ideaData = {
         title: titleInput.value.trim(),
         description: descriptionInput.value.trim(),
         submittedBy: currentUser.id,
         category: aiAnalysisData?.category || 'General',
-        tags: aiAnalysisData?.tags || [],
+        tags: Array.isArray(aiAnalysisData?.tags) ? aiAnalysisData.tags : ['innovation'],
         aiScore: aiAnalysisData?.score || null
       }
-
-      const newIdea = await window.app.api.createIdea(ideaData)
       
-      // Award points for idea submission
-      await window.app.api.awardPointsForIdeaSubmission(currentUser.id)
+      console.log('📤 Submitting idea data:', ideaData)
+      
+      // Add timeout to prevent hanging
+      const createIdeaPromise = window.app.api.createIdea(ideaData)
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Submission timeout after 30 seconds')), 30000)
+      )
+      
+      const newIdea = await Promise.race([createIdeaPromise, timeoutPromise])
+      console.log('✅ Idea created successfully:', newIdea)
+      
+      // Award points for idea submission (don't fail if this fails)
+      try {
+        await window.app.api.awardPointsForIdeaSubmission(currentUser.id)
+        console.log('✅ Points awarded successfully')
+      } catch (pointsError) {
+        console.warn('⚠️ Failed to award points:', pointsError.message)
+      }
       
       // Clear draft
       localStorage.removeItem('idea_draft')
@@ -625,6 +675,7 @@ function initializeSubmitIdeaForm() {
       
       // Reset button state
       submitBtn.disabled = false
+      submitBtn.classList.remove('opacity-50', 'cursor-not-allowed')
       submitBtnText.textContent = '🚀 Submit Idea'
       submitSpinner.classList.add('hidden')
     }
