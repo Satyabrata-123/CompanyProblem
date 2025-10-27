@@ -1,18 +1,19 @@
 package com.innovation.ai.service;
 
-import com.innovation.ai.dto.CategorizeRequest;
-import com.innovation.ai.dto.CategorizeResponse;
-import lombok.RequiredArgsConstructor;
-
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import com.innovation.ai.dto.CategorizeRequest;
+import com.innovation.ai.dto.CategorizeResponse;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -203,7 +204,7 @@ public class AiService {
 
             Map<String, Object> response = webClientBuilder.build()
                     .post()
-                    .uri("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyBKqgWYxMjoOZfRJkfhHHxBAF978LD7Oqo")
+                    .uri("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyC9CIMQf0zwRBPyJUUIGD1cOBqhrpFoXl4")
                     .header("Content-Type", "application/json")
                     .bodyValue(requestBody)
                     .retrieve()

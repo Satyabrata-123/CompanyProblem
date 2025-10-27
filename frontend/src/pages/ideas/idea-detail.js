@@ -2,21 +2,21 @@ import { Layout } from '../../components/layout/layout.js'
 
 export default async function IdeaDetailPage(params) {
   const currentUser = window.app.state.getState('user').currentUser
-  
+
   if (!currentUser) {
     window.app.router.navigate('/login')
     return ''
   }
 
   const ideaId = params.id
-  
+
   // Load idea data
   let idea = null
   let comments = []
   let votes = []
   let userVote = null
   let isOwner = false
-  
+
   try {
     // Load idea details and engagement data
     const [ideaData, commentsData, votesData, userVoteData] = await Promise.all([
@@ -25,19 +25,19 @@ export default async function IdeaDetailPage(params) {
       window.app.api.getVotesForIdea(ideaId),
       window.app.api.getUserVoteForIdea(ideaId, currentUser.id).catch(() => null)
     ])
-    
+
     idea = ideaData
     comments = commentsData || []
     votes = votesData || []
     userVote = userVoteData
     isOwner = idea.submittedBy === currentUser.id
-    
+
     // Update state
     window.app.state.setCurrentIdea(idea)
     if (userVote) {
       window.app.state.setUserVote(ideaId, userVote.voteType)
     }
-    
+
   } catch (error) {
     console.error('Failed to load idea:', error)
     return Layout(`
@@ -221,10 +221,10 @@ export default async function IdeaDetailPage(params) {
 
               <!-- Comments List -->
               <div id="commentsList" class="space-y-4">
-                ${comments.length > 0 ? 
-                  comments.map(comment => createCommentElement(comment, currentUser)).join('') :
-                  '<p class="text-gray-500 text-center py-8">No comments yet. Be the first to share your thoughts!</p>'
-                }
+                ${comments.length > 0 ?
+      comments.map(comment => createCommentElement(comment, currentUser)).join('') :
+      '<p class="text-gray-500 text-center py-8">No comments yet. Be the first to share your thoughts!</p>'
+    }
               </div>
             </div>
           </div>
@@ -350,7 +350,7 @@ function initializeIdeaDetailPage(idea, comments, votes, userVote, isOwner, curr
 
     try {
       const currentVote = window.app.state.getUserVote(idea.id)
-      
+
       if (currentVote === voteType) {
         // Remove vote if clicking same vote type
         await window.app.api.voting.removeVote(idea.id, currentUser.id)
@@ -358,10 +358,10 @@ function initializeIdeaDetailPage(idea, comments, votes, userVote, isOwner, curr
         // Cast new vote
         await window.app.api.voting.castVote(idea.id, voteType, currentUser.id)
       }
-      
+
       // Refresh the page to show updated votes
       window.app.router.handleRoute()
-      
+
     } catch (error) {
       console.error('Voting failed:', error)
       window.app.state.addNotification({
@@ -374,20 +374,20 @@ function initializeIdeaDetailPage(idea, comments, votes, userVote, isOwner, curr
   window.updateStatus = async () => {
     const statusSelect = document.getElementById('statusSelect')
     const newStatus = statusSelect.value
-    
+
     if (newStatus === idea.status) return
-    
+
     try {
       await window.app.api.updateIdeaStatus(idea.id, newStatus)
-      
+
       window.app.state.addNotification({
         type: 'success',
         message: `Idea status updated to ${newStatus.replace('_', ' ')}`
       })
-      
+
       // Refresh the page
       window.app.router.handleRoute()
-      
+
     } catch (error) {
       console.error('Status update failed:', error)
       window.app.state.addNotification({
@@ -426,7 +426,7 @@ function initializeIdeaDetailPage(idea, comments, votes, userVote, isOwner, curr
 
   async function submitComment() {
     const content = commentContent.value.trim()
-    
+
     if (!content) {
       window.app.state.addNotification({
         type: 'warning',
@@ -449,19 +449,19 @@ function initializeIdeaDetailPage(idea, comments, votes, userVote, isOwner, curr
 
     try {
       await window.app.api.voting.addComment(idea.id, content, currentUser.id, currentUser.fullName)
-      
+
       // Clear form
       commentContent.value = ''
       commentCount.textContent = '0'
-      
+
       window.app.state.addNotification({
         type: 'success',
         message: 'Comment posted successfully! You earned 2 points.'
       })
-      
+
       // Refresh the page to show new comment
       window.app.router.handleRoute()
-      
+
     } catch (error) {
       console.error('Comment submission failed:', error)
       window.app.state.addNotification({
@@ -478,7 +478,7 @@ function initializeIdeaDetailPage(idea, comments, votes, userVote, isOwner, curr
 function createCommentElement(comment, currentUser) {
   const isOwner = comment.userId === currentUser.id
   const timeAgo = formatRelativeTime(comment.createdAt)
-  
+
   return `
     <div class="flex space-x-3">
       <div class="flex-shrink-0">
@@ -514,9 +514,9 @@ function generateStatusTimeline(currentStatus) {
     { key: 'IN_DEVELOPMENT', title: 'In Development', description: 'Currently being implemented' },
     { key: 'IMPLEMENTED', title: 'Implemented', description: 'Successfully implemented' }
   ]
-  
+
   const currentIndex = statuses.findIndex(s => s.key === currentStatus)
-  
+
   return statuses.map((status, index) => ({
     ...status,
     completed: index < currentIndex,
@@ -556,11 +556,11 @@ function formatRelativeTime(dateString) {
   const date = new Date(dateString)
   const now = new Date()
   const diffInMinutes = Math.floor((now - date) / (1000 * 60))
-  
+
   if (diffInMinutes < 1) return 'just now'
   if (diffInMinutes < 60) return `${diffInMinutes}m ago`
   if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`
   if (diffInMinutes < 10080) return `${Math.floor(diffInMinutes / 1440)}d ago`
-  
+
   return date.toLocaleDateString()
 }

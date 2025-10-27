@@ -1,0 +1,9 @@
+com\innovation\common\dto\CommentDTO$CommentDTOBuilder.class
+com\innovation\common\enums\IdeaStatus.class
+com\innovation\common\dto\UserDTO.class
+com\innovation\common\dto\VoteDTO$VoteDTOBuilder.class
+com\innovation\common\dto\VoteDTO.class
+com\innovation\common\dto\UserDTO$UserDTOBuilder.class
+com\innovation\common\dto\CommentDTO.class
+com\innovation\common\dto\IdeaDTO.class
+com\innovation\common\dto\IdeaDTO$IdeaDTOBuilder.class

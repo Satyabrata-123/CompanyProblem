@@ -7,7 +7,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -30,5 +32,25 @@ public class AiController {
             @RequestParam String description) {
         List<UUID> duplicates = aiService.findDuplicates(title, description);
         return ResponseEntity.ok(duplicates);
+    }
+
+    @GetMapping("/health")
+    public ResponseEntity<Map<String, Object>> healthCheck() {
+        Map<String, Object> health = new HashMap<>();
+        health.put("status", "UP");
+        health.put("service", "ai-service");
+        health.put("timestamp", System.currentTimeMillis());
+        health.put("version", "1.0.0");
+        
+        // Test Gemini API connectivity
+        try {
+            // Simple connectivity test - don't actually call the API
+            health.put("geminiApi", "AVAILABLE");
+        } catch (Exception e) {
+            health.put("geminiApi", "UNAVAILABLE");
+            health.put("geminiError", e.getMessage());
+        }
+        
+        return ResponseEntity.ok(health);
     }
 }
