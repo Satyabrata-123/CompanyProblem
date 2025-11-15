@@ -1,6 +1,6 @@
-D:\COMPANY_PROBLEM\user-service\src\main\java\com\innovation\user\repository\UserRepository.java
-D:\COMPANY_PROBLEM\user-service\src\main\java\com\innovation\user\controller\UserController.java
-D:\COMPANY_PROBLEM\user-service\src\main\java\com\innovation\user\entity\User.java
-D:\COMPANY_PROBLEM\user-service\src\main\java\com\innovation\user\service\UserService.java
-D:\COMPANY_PROBLEM\user-service\src\main\java\com\innovation\user\EnableEurekaClient.java
-D:\COMPANY_PROBLEM\user-service\src\main\java\com\innovation\user\UserServiceApplication.java
+D:\IdeaSubmissionProject\CompanyProblem\user-service\src\main\java\com\innovation\user\controller\UserController.java
+D:\IdeaSubmissionProject\CompanyProblem\user-service\src\main\java\com\innovation\user\entity\User.java
+D:\IdeaSubmissionProject\CompanyProblem\user-service\src\main\java\com\innovation\user\repository\UserRepository.java
+D:\IdeaSubmissionProject\CompanyProblem\user-service\src\main\java\com\innovation\user\service\UserService.java
+D:\IdeaSubmissionProject\CompanyProblem\user-service\src\main\java\com\innovation\user\EnableEurekaClient.java
+D:\IdeaSubmissionProject\CompanyProblem\user-service\src\main\java\com\innovation\user\UserServiceApplication.java
