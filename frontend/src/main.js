@@ -69,6 +69,12 @@ class App {
       '/ideas': () => import('./pages/ideas/ideas-list.js'),
       '/ideas/new': () => import('./pages/ideas/submit-idea.js'),
       '/ideas/:id': () => import('./pages/ideas/idea-detail.js'),
+      '/challenges': () => import('./pages/challenges/challenges-list.js'),
+      '/challenges/:id': () => import('./pages/challenges/challenge-detail.js'),
+      '/challenges/:id/submit': () => import('./pages/challenges/submit-solution.js'),
+      '/company/dashboard': () => import('./pages/company/company-dashboard.js'),
+      '/company/register': () => import('./pages/company/company-register.js'),
+      '/solutions/:id': () => import('./pages/solutions/solution-detail.js'),
       '/profile': () => import('./pages/profile/profile.js'),
       '/leaderboard': () => import('./pages/leaderboard/leaderboard.js'),
       '/admin': () => import('./pages/admin/admin-dashboard.js')

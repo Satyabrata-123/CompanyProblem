@@ -1,0 +1,304 @@
+import { apiClient } from '../../services/api-client.js';
+
+export class ChallengesListPage {
+    constructor() {
+        this.challenges = [];
+        this.selectedDifficulty = 'all';
+    }
+
+    async render() {
+        return `
+            <div class="challenges-page">
+                <div class="page-header">
+                    <h1>Company Challenges</h1>
+                    <p>Solve real-world problems from companies and win rewards!</p>
+                </div>
+
+                <div class="filters">
+                    <div class="difficulty-filter">
+                        <label>Filter by Difficulty:</label>
+                        <select id="difficultyFilter">
+                            <option value="all">All Levels</option>
+                            <option value="BEGINNER">Beginner</option>
+                            <option value="INTERMEDIATE">Intermediate</option>
+                            <option value="EXPERT">Expert</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="challenges-grid" id="challengesGrid">
+                    <div class="loading">Loading challenges...</div>
+                </div>
+            </div>
+        `;
+    }
+
+    async afterRender() {
+        await this.loadChallenges();
+        this.setupEventListeners();
+    }
+
+    async loadChallenges() {
+        try {
+            const response = await apiClient.get('/api/challenges');
+            this.challenges = response.data;
+            this.renderChallenges();
+        } catch (error) {
+            console.error('Error loading challenges:', error);
+            document.getElementById('challengesGrid').innerHTML = 
+                '<div class="error">Failed to load challenges</div>';
+        }
+    }
+
+    async loadChallengesByDifficulty(difficulty) {
+        try {
+            const url = difficulty === 'all' 
+                ? '/api/challenges' 
+                : `/api/challenges/difficulty/${difficulty}`;
+            
+            const response = await apiClient.get(url);
+            this.challenges = response.data;
+            this.renderChallenges();
+        } catch (error) {
+            console.error('Error loading challenges:', error);
+        }
+    }
+
+    renderChallenges() {
+        const grid = document.getElementById('challengesGrid');
+        
+        if (this.challenges.length === 0) {
+            grid.innerHTML = '<div class="no-challenges">No challenges available</div>';
+            return;
+        }
+
+        grid.innerHTML = this.challenges.map(challenge => `
+            <div class="challenge-card" data-challenge-id="${challenge.id}">
+                <div class="challenge-header">
+                    <div class="difficulty-badge ${challenge.difficulty.toLowerCase()}">
+                        ${challenge.difficulty}
+                    </div>
+                    <div class="reward">
+                        ${challenge.rewardAmount ? `$${challenge.rewardAmount}` : 'No reward'}
+                    </div>
+                </div>
+                
+                <h3>${challenge.title}</h3>
+                <p class="company-name">by ${challenge.companyName}</p>
+                <p class="description">${this.truncateText(challenge.description, 150)}</p>
+                
+                <div class="challenge-meta">
+                    <span class="category">${challenge.category || 'General'}</span>
+                    <span class="submissions">${challenge.currentSubmissions}/${challenge.maxSubmissions || '∞'} submissions</span>
+                </div>
+                
+                <div class="challenge-footer">
+                    <span class="deadline">
+                        Deadline: ${new Date(challenge.submissionDeadline).toLocaleDateString()}
+                    </span>
+                    <button class="btn-primary view-challenge" data-challenge-id="${challenge.id}">
+                        View Challenge
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    setupEventListeners() {
+        // Difficulty filter
+        document.getElementById('difficultyFilter').addEventListener('change', (e) => {
+            this.selectedDifficulty = e.target.value;
+            this.loadChallengesByDifficulty(this.selectedDifficulty);
+        });
+
+        // View challenge buttons
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('view-challenge')) {
+                const challengeId = e.target.dataset.challengeId;
+                window.router.navigate(`/challenges/${challengeId}`);
+            }
+        });
+    }
+
+    truncateText(text, maxLength) {
+        if (text.length <= maxLength) return text;
+        return text.substring(0, maxLength) + '...';
+    }
+}
+
+// CSS for challenges
+const challengesCSS = `
+.challenges-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.page-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.page-header h1 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+.filters {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.difficulty-filter label {
+    margin-right: 10px;
+    font-weight: 500;
+}
+
+.difficulty-filter select {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.challenges-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 20px;
+}
+
+.challenge-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid #e1e8ed;
+}
+
+.challenge-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.challenge-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.difficulty-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.difficulty-badge.beginner {
+    background: #d4edda;
+    color: #155724;
+}
+
+.difficulty-badge.intermediate {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.difficulty-badge.expert {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.reward {
+    font-weight: 600;
+    color: #28a745;
+}
+
+.challenge-card h3 {
+    margin: 0 0 8px 0;
+    color: #2c3e50;
+    font-size: 18px;
+}
+
+.company-name {
+    color: #6c757d;
+    font-size: 14px;
+    margin: 0 0 12px 0;
+    font-style: italic;
+}
+
+.description {
+    color: #495057;
+    line-height: 1.5;
+    margin-bottom: 15px;
+}
+
+.challenge-meta {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    font-size: 14px;
+}
+
+.category {
+    background: #e9ecef;
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: #495057;
+}
+
+.submissions {
+    color: #6c757d;
+}
+
+.challenge-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 15px;
+    border-top: 1px solid #e9ecef;
+}
+
+.deadline {
+    font-size: 14px;
+    color: #6c757d;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+}
+
+.loading, .error, .no-challenges {
+    text-align: center;
+    padding: 40px;
+    color: #6c757d;
+    grid-column: 1 / -1;
+}
+
+.error {
+    color: #dc3545;
+}
+`;
+
+// Inject CSS
+if (!document.getElementById('challenges-css')) {
+    const style = document.createElement('style');
+    style.id = 'challenges-css';
+    style.textContent = challengesCSS;
+    document.head.appendChild(style);
+}

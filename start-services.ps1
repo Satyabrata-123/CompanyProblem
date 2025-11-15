@@ -34,6 +34,10 @@ Start-Sleep -Seconds 5
 
 Write-Host "Starting AI Service (Port 8085)..." -ForegroundColor Cyan
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd ai-service; mvn spring-boot:run" -WindowStyle Normal
+Start-Sleep -Seconds 5
+
+Write-Host "Starting Company Service (Port 8086)..." -ForegroundColor Cyan
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd company-service; mvn spring-boot:run" -WindowStyle Normal
 
 Write-Host ""
 Write-Host "All services are starting..." -ForegroundColor Green

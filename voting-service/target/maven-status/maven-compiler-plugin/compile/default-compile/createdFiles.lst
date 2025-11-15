@@ -1,0 +1,13 @@
+com\innovation\voting\EnableEurekaclient.class
+com\innovation\voting\service\CommentService.class
+com\innovation\voting\repository\VoteRepository.class
+com\innovation\voting\entity\Comment$CommentBuilder.class
+com\innovation\voting\VotingServiceApplication.class
+com\innovation\voting\entity\Vote$VoteBuilder.class
+com\innovation\voting\entity\Comment.class
+com\innovation\voting\controller\CommentController.class
+com\innovation\voting\entity\Vote.class
+com\innovation\voting\config\WebClientConfig.class
+com\innovation\voting\controller\VotingController.class
+com\innovation\voting\service\VotingService.class
+com\innovation\voting\repository\CommentRepository.class

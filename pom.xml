@@ -26,6 +26,7 @@
         <module>voting-service</module>
         <module>gamification-service</module>
         <module>ai-service</module>
+        <module>company-service</module>
     </modules>
 
     <properties>

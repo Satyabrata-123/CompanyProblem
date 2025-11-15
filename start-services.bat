@@ -35,6 +35,10 @@ timeout /t 5
 
 echo Starting AI Service (Port 8085)...
 start "AI Service" cmd /k "cd ai-service && mvn spring-boot:run"
+timeout /t 5
+
+echo Starting Company Service (Port 8086)...
+start "Company Service" cmd /k "cd company-service && mvn spring-boot:run"
 
 echo.
 echo All services are starting...

@@ -1,0 +1,13 @@
+com\innovation\idea\IdeaServiceApplication.class
+com\innovation\idea\service\SolutionService.class
+com\innovation\idea\entity\Solution.class
+com\innovation\idea\entity\Idea$IdeaBuilder.class
+com\innovation\idea\entity\Solution$SolutionBuilder.class
+com\innovation\idea\service\IdeaService.class
+com\innovation\idea\controller\IdeaController.class
+com\innovation\idea\entity\Idea.class
+com\innovation\idea\repository\SolutionRepository.class
+com\innovation\idea\repository\IdeaRepository.class
+com\innovation\idea\controller\SolutionController.class
+com\innovation\idea\EnableEurekaClient.class
+com\innovation\idea\entity\Solution$SolutionStatus.class

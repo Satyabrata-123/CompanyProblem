@@ -1,0 +1,11 @@
+D:\COMPANY_PROBLEM\voting-service\src\main\java\com\innovation\voting\entity\Vote.java
+D:\COMPANY_PROBLEM\voting-service\src\main\java\com\innovation\voting\repository\CommentRepository.java
+D:\COMPANY_PROBLEM\voting-service\src\main\java\com\innovation\voting\entity\Comment.java
+D:\COMPANY_PROBLEM\voting-service\src\main\java\com\innovation\voting\config\WebClientConfig.java
+D:\COMPANY_PROBLEM\voting-service\src\main\java\com\innovation\voting\controller\VotingController.java
+D:\COMPANY_PROBLEM\voting-service\src\main\java\com\innovation\voting\VotingServiceApplication.java
+D:\COMPANY_PROBLEM\voting-service\src\main\java\com\innovation\voting\service\CommentService.java
+D:\COMPANY_PROBLEM\voting-service\src\main\java\com\innovation\voting\EnableEurekaclient.java
+D:\COMPANY_PROBLEM\voting-service\src\main\java\com\innovation\voting\controller\CommentController.java
+D:\COMPANY_PROBLEM\voting-service\src\main\java\com\innovation\voting\repository\VoteRepository.java
+D:\COMPANY_PROBLEM\voting-service\src\main\java\com\innovation\voting\service\VotingService.java
