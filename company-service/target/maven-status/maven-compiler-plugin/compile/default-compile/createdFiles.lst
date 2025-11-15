@@ -1,0 +1,12 @@
+com\innovation\company\entity\Challenge$DifficultyLevel.class
+com\innovation\company\controller\ChallengeController.class
+com\innovation\company\entity\Challenge.class
+com\innovation\company\entity\Company$CompanyBuilder.class
+com\innovation\company\entity\Company.class
+com\innovation\company\controller\CompanyController.class
+com\innovation\company\service\ChallengeService.class
+com\innovation\company\CompanyServiceApplication.class
+com\innovation\company\entity\Challenge$ChallengeBuilder.class
+com\innovation\company\service\CompanyService.class
+com\innovation\company\repository\CompanyRepository.class
+com\innovation\company\repository\ChallengeRepository.class

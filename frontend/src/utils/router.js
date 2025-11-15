@@ -233,6 +233,10 @@ export class Router {
       '/register': 'Register - Innovation Platform',
       '/ideas': 'Ideas - Innovation Platform',
       '/ideas/new': 'Submit Idea - Innovation Platform',
+      '/challenges': 'Challenges - Innovation Platform',
+      '/challenges/submit': 'Submit Solution - Innovation Platform',
+      '/company/dashboard': 'Company Dashboard - Innovation Platform',
+      '/company/register': 'Register Company - Innovation Platform',
       '/profile': 'Profile - Innovation Platform',
       '/leaderboard': 'Leaderboard - Innovation Platform',
       '/admin': 'Admin Dashboard - Innovation Platform'

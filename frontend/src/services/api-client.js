@@ -311,6 +311,103 @@ export class ApiClient {
     return this.post(`/ai/duplicates?title=${encodeURIComponent(title)}&description=${encodeURIComponent(description)}`)
   }
 
+  // Company Service Methods
+  async createCompany(companyData) {
+    return this.post('/companies', companyData)
+  }
+
+  async getAllCompanies() {
+    return this.get('/companies')
+  }
+
+  async getVerifiedCompanies() {
+    return this.get('/companies/verified')
+  }
+
+  async getCompanyById(id) {
+    return this.get(`/companies/${id}`)
+  }
+
+  async updateCompany(id, companyData) {
+    return this.put(`/companies/${id}`, companyData)
+  }
+
+  async verifyCompany(id) {
+    return this.put(`/companies/${id}/verify`)
+  }
+
+  // Challenge Service Methods
+  async createChallenge(challengeData, internalSolutionBrief) {
+    return this.post('/challenges', {
+      challenge: challengeData,
+      internalSolutionBrief: internalSolutionBrief
+    })
+  }
+
+  async getAllChallenges() {
+    return this.get('/challenges')
+  }
+
+  async getChallengesByDifficulty(difficulty) {
+    return this.get(`/challenges/difficulty/${difficulty}`)
+  }
+
+  async getChallengesByCompany(companyId) {
+    return this.get(`/challenges/company/${companyId}`)
+  }
+
+  async getChallengeById(id) {
+    return this.get(`/challenges/${id}`)
+  }
+
+  async getFeaturedChallenges() {
+    return this.get('/challenges/featured')
+  }
+
+  async updateChallengeStatus(id, isActive) {
+    return this.put(`/challenges/${id}/status?isActive=${isActive}`)
+  }
+
+  async incrementChallengeSubmissions(id) {
+    return this.put(`/challenges/${id}/increment-submissions`)
+  }
+
+  // Solution Service Methods
+  async submitSolution(solutionData) {
+    return this.post('/solutions', solutionData)
+  }
+
+  async getSolutionsByChallenge(challengeId) {
+    return this.get(`/solutions/challenge/${challengeId}`)
+  }
+
+  async getTopSolutionsByChallenge(challengeId) {
+    return this.get(`/solutions/challenge/${challengeId}/top`)
+  }
+
+  async getSolutionsByUser(userId) {
+    return this.get(`/solutions/user/${userId}`)
+  }
+
+  async getSolutionById(id) {
+    return this.get(`/solutions/${id}`)
+  }
+
+  async getSolutionCountByChallenge(challengeId) {
+    return this.get(`/solutions/challenge/${challengeId}/count`)
+  }
+
+  async updateSolutionStatus(id, status, score = null, feedback = null) {
+    let url = `/solutions/${id}/status?status=${status}`
+    if (score !== null) url += `&score=${score}`
+    if (feedback !== null) url += `&feedback=${encodeURIComponent(feedback)}`
+    return this.put(url)
+  }
+
+  async updateSolutionVoteCount(id, change) {
+    return this.put(`/solutions/${id}/vote-count?change=${change}`)
+  }
+
   // Initialize service modules
   initializeServices() {
     // Import service modules dynamically to avoid circular dependencies

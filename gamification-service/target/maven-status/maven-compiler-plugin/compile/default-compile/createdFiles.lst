@@ -1,0 +1,11 @@
+com\innovation\gamification\repository\BadgeRepository.class
+com\innovation\gamification\entity\Badge$BadgeBuilder.class
+com\innovation\gamification\GamificationServiceApplication.class
+com\innovation\gamification\controller\GamificationController.class
+com\innovation\gamification\EnableEurekaClient.class
+com\innovation\gamification\repository\UserBadgeRepository.class
+com\innovation\gamification\service\GamificationService.class
+com\innovation\gamification\entity\UserBadge$UserBadgeBuilder.class
+com\innovation\gamification\entity\UserBadge.class
+com\innovation\gamification\config\WebClientConfig.class
+com\innovation\gamification\entity\Badge.class

@@ -1,0 +1,172 @@
+# Company Challenge System - API Test Endpoints
+# Use this file with REST Client extension in VS Code or similar tools
+
+### Variables
+@baseUrl = http://localhost:8080/api
+@companyId = YOUR_COMPANY_ID_HERE
+@challengeId = YOUR_CHALLENGE_ID_HERE
+@solutionId = YOUR_SOLUTION_ID_HERE
+@userId = YOUR_USER_ID_HERE
+
+### ============================================
+### COMPANY ENDPOINTS
+### ============================================
+
+### 1. Register New Company
+POST {{baseUrl}}/companies
+Content-Type: application/json
+
+{
+  "name": "Tech Innovations Inc",
+  "description": "Leading technology company focused on AI and ML solutions",
+  "email": "contact@techinnovations.com",
+  "phone": "+1-555-0123",
+  "website": "https://www.techinnovations.com",
+  "industry": "Technology",
+  "size": "MEDIUM",
+  "address": "123 Tech Street, Silicon Valley, CA 94025",
+  "contactPerson": "John Doe"
+}
+
+### 2. Get All Companies
+GET {{baseUrl}}/companies
+
+### 3. Get Verified Companies Only
+GET {{baseUrl}}/companies/verified
+
+### 4. Get Company by ID
+GET {{baseUrl}}/companies/{{companyId}}
+
+### 5. Update Company
+PUT {{baseUrl}}/companies/{{companyId}}
+Content-Type: application/json
+
+{
+  "name": "Tech Innovations Inc - Updated",
+  "description": "Updated description",
+  "phone": "+1-555-9999",
+  "website": "https://www.techinnovations.com",
+  "industry": "Technology",
+  "size": "LARGE",
+  "address": "456 New Address, Silicon Valley, CA 94025",
+  "contactPerson": "Jane Smith"
+}
+
+### 6. Verify Company (Admin only)
+PUT {{baseUrl}}/companies/{{companyId}}/verify
+
+### ============================================
+### CHALLENGE ENDPOINTS
+### ============================================
+
+### 7. Create New Challenge
+POST {{baseUrl}}/challenges
+Content-Type: application/json
+
+{
+  "challenge": {
+    "companyId": "{{companyId}}",
+    "title": "Build a Real-time Chat Application",
+    "description": "We need a scalable real-time chat application that can handle 10,000+ concurrent users. The solution should include user authentication, message persistence, and real-time notifications.",
+    "requirements": "1. User authentication and authorization\n2. Real-time messaging using WebSockets\n3. Message history and search\n4. File sharing capabilities\n5. Mobile responsive design\n6. Scalable architecture",
+    "difficulty": "INTERMEDIATE",
+    "category": "Web Development",
+    "rewardAmount": 5000,
+    "rewardCurrency": "USD",
+    "submissionDeadline": "2024-12-31T23:59:59",
+    "maxSubmissions": 50,
+    "tags": "websockets,real-time,chat,scalability",
+    "evaluationCriteria": "Solutions will be evaluated based on:\n1. Code quality and architecture (30%)\n2. Scalability and performance (30%)\n3. User experience (20%)\n4. Documentation (10%)\n5. Innovation (10%)"
+  },
+  "internalSolutionBrief": "Our internal solution uses Node.js with Socket.io, Redis for pub/sub, MongoDB for message storage, and React for frontend. Key features include horizontal scaling with Redis adapter, message queuing, and CDN for file sharing."
+}
+
+### 8. Get All Active Challenges
+GET {{baseUrl}}/challenges
+
+### 9. Get Challenges by Difficulty
+GET {{baseUrl}}/challenges/difficulty/BEGINNER
+###
+GET {{baseUrl}}/challenges/difficulty/INTERMEDIATE
+###
+GET {{baseUrl}}/challenges/difficulty/EXPERT
+
+### 10. Get Challenges by Company
+GET {{baseUrl}}/challenges/company/{{companyId}}
+
+### 11. Get Challenge by ID
+GET {{baseUrl}}/challenges/{{challengeId}}
+
+### 12. Get Featured Challenges
+GET {{baseUrl}}/challenges/featured
+
+### 13. Update Challenge Status
+PUT {{baseUrl}}/challenges/{{challengeId}}/status?isActive=true
+
+### 14. Increment Challenge Submission Count
+PUT {{baseUrl}}/challenges/{{challengeId}}/increment-submissions
+
+### ============================================
+### SOLUTION ENDPOINTS
+### ============================================
+
+### 15. Submit Solution
+POST {{baseUrl}}/solutions
+Content-Type: application/json
+
+{
+  "challengeId": "{{challengeId}}",
+  "submittedBy": "{{userId}}",
+  "title": "Scalable Chat App with WebSocket Clustering",
+  "description": "I've built a highly scalable real-time chat application using modern web technologies. The solution implements WebSocket clustering for horizontal scaling, Redis pub/sub for message distribution, and MongoDB for persistent storage.",
+  "implementation": "Architecture:\n- Frontend: React with Socket.io client\n- Backend: Node.js Express with Socket.io server\n- Database: MongoDB for messages, Redis for caching\n- Deployment: Docker containers with Kubernetes\n\nKey Features:\n- JWT authentication\n- Real-time typing indicators\n- Message read receipts\n- File upload with S3\n- Mobile responsive UI",
+  "technologies": "React, Node.js, Socket.io, MongoDB, Redis, Docker, Kubernetes, AWS S3",
+  "githubUrl": "https://github.com/username/chat-app",
+  "demoUrl": "https://chat-demo.example.com"
+}
+
+### 16. Get Solutions by Challenge
+GET {{baseUrl}}/solutions/challenge/{{challengeId}}
+
+### 17. Get Top Solutions by Challenge
+GET {{baseUrl}}/solutions/challenge/{{challengeId}}/top
+
+### 18. Get Solutions by User
+GET {{baseUrl}}/solutions/user/{{userId}}
+
+### 19. Get Solution by ID
+GET {{baseUrl}}/solutions/{{solutionId}}
+
+### 20. Get Solution Count for Challenge
+GET {{baseUrl}}/solutions/challenge/{{challengeId}}/count
+
+### 21. Update Solution Status and Score
+PUT {{baseUrl}}/solutions/{{solutionId}}/status?status=ACCEPTED&score=85.5&feedback=Excellent implementation with good scalability considerations. Minor improvements needed in error handling.
+
+### 22. Update Solution Vote Count
+PUT {{baseUrl}}/solutions/{{solutionId}}/vote-count?change=1
+
+### ============================================
+### INTEGRATION TESTS
+### ============================================
+
+### Test Complete Workflow
+# 1. Register Company
+# 2. Verify Company
+# 3. Create Challenge
+# 4. Submit Solution
+# 5. Update Solution Status
+# 6. Vote on Solution
+
+### ============================================
+### HEALTH CHECKS
+### ============================================
+
+### Check Company Service Health
+GET http://localhost:8086/actuator/health
+
+### Check All Services via Gateway
+GET http://localhost:8080/actuator/health
+
+### Check Eureka Dashboard
+GET http://localhost:8761
