@@ -360,6 +360,10 @@ export class ApiClient {
     return this.get(`/challenges/${id}`)
   }
 
+  async getChallengeByIdAndDifficulty(difficulty, id) {
+    return this.get(`/challenges/${difficulty}/${id}`)
+  }
+
   async getFeaturedChallenges() {
     return this.get('/challenges/featured')
   }
@@ -370,6 +374,19 @@ export class ApiClient {
 
   async incrementChallengeSubmissions(id) {
     return this.put(`/challenges/${id}/increment-submissions`)
+  }
+
+  // Challenge Ideas Methods
+  async submitIdeaForChallenge(ideaData) {
+    return this.post('/challenges/ideas', ideaData)
+  }
+
+  async getIdeasForChallenge(challengeId) {
+    return this.get(`/challenges/${challengeId}/ideas`)
+  }
+
+  async getIdeasByUser(userId) {
+    return this.get(`/challenges/ideas/user/${userId}`)
   }
 
   // Solution Service Methods

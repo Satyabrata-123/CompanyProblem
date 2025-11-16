@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Your Company Verification</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+        .step { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 3px; }
+        button:hover { background: #0056b3; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; font-size: 12px; }
+        .highlight { background-color: yellow; padding: 2px 4px; font-weight: bold; }
+        .copy-button { background: #28a745; font-size: 12px; padding: 5px 10px; }
+        .copy-button:hover { background: #218838; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Fix Your Company Verification</h1>
+    
+    <div class="step warning">
+        <h2>⚠️ Issue Identified</h2>
+        <p>Your company exists in the database but the <code>is_verified</code> field is stored incorrectly as binary data (<code>0x01</code>) instead of a proper boolean value.</p>
+        <p><strong>Company found:</strong> "No" (contact: Satyabrata Mallik)</p>
+    </div>
+
+    <div class="step info">
+        <h2>Step 1: Get Your Company Information</h2>
+        <button onclick="getCompanies()">Get All Companies</button>
+        <div id="companiesResult"></div>
+    </div>
+
+    <div class="step">
+        <h2>Step 2: Set Your Company as Current User</h2>
+        <p>Once we find your company, we'll set it as the current user:</p>
+        <div id="companySelection"></div>
+        <div id="userSetResult"></div>
+    </div>
+
+    <div class="step">
+        <h2>Step 3: SQL Fix Commands</h2>
+        <p>Run these SQL commands in MySQL to fix the verification issue:</p>
+        <div id="sqlCommands"></div>
+    </div>
+
+    <div class="step">
+        <h2>Step 4: Test Challenge Creation</h2>
+        <button onclick="testChallengeCreation()" id="testButton" disabled>Test Create Challenge</button>
+        <div id="testResult"></div>
+    </div>
+
+    <script>
+        let currentCompany = null;
+
+        async function apiCall(endpoint, options = {}) {
+            try {
+                const response = await fetch(`/api${endpoint}`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                return response.status === 204 ? null : await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+
+        async function getCompanies() {
+            const resultDiv = document.getElementById('companiesResult');
+            try {
+                resultDiv.innerHTML = '<p>🔍 Loading companies...</p>';
+                const companies = await apiCall('/companies');
+                
+                if (companies.length === 0) {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h3>❌ No Companies Found</h3>
+                            <p>No companies exist in the database. You may need to register first.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Find the company with contact person "Satyabrata Mallik"
+                const yourCompany = companies.find(c => 
+                    c.contactPerson === 'Satyabrata Mallik' || 
+                    c.email === 'satya1@gmail.com'
+                );
+
+                if (yourCompany) {
+                    currentCompany = yourCompany;
+                    resultDiv.innerHTML = `
+                        <div class="${yourCompany.isVerified ? 'success' : 'warning'}">
+                            <h3>🏢 Your Company Found</h3>
+                            <p><strong>Name:</strong> ${yourCompany.name}</p>
+                            <p><strong>Email:</strong> ${yourCompany.email}</p>
+                            <p><strong>Contact:</strong> ${yourCompany.contactPerson}</p>
+                            <p><strong>ID:</strong> <span class="highlight">${yourCompany.id}</span></p>
+                            <p><strong>Verified:</strong> ${yourCompany.isVerified ? '✅ YES' : '❌ NO'}</p>
+                            <p><strong>Active:</strong> ${yourCompany.isActive ? '✅ YES' : '❌ NO'}</p>
+                            
+                            ${!yourCompany.isVerified ? `
+                                <div class="warning" style="margin-top: 10px; padding: 10px;">
+                                    <strong>⚠️ Verification Required</strong><br>
+                                    Your company needs to be verified to create challenges.
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+
+                    // Show company selection
+                    document.getElementById('companySelection').innerHTML = `
+                        <button onclick="setCurrentCompany('${yourCompany.id}', '${yourCompany.name}')">
+                            Set "${yourCompany.name}" as Current Company
+                        </button>
+                    `;
+
+                    // Generate SQL commands
+                    generateSQLCommands(yourCompany.id);
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="info">
+                            <h3>📋 All Companies Found: ${companies.length}</h3>
+                            ${companies.map(c => `
+                                <div style="border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 5px;">
+                                    <p><strong>Name:</strong> ${c.name}</p>
+                                    <p><strong>Email:</strong> ${c.email}</p>
+                                    <p><strong>Contact:</strong> ${c.contactPerson}</p>
+                                    <p><strong>ID:</strong> ${c.id}</p>
+                                    <p><strong>Verified:</strong> ${c.isVerified ? '✅' : '❌'}</p>
+                                    <button onclick="setCurrentCompany('${c.id}', '${c.name}')">Use This Company</button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Error Loading Companies</h3>
+                        <p>${error.message}</p>
+                        <p>Make sure the company service is running and the database is accessible.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function setCurrentCompany(companyId, companyName) {
+            const currentUser = {
+                companyId: companyId,
+                companyName: companyName,
+                role: 'company',
+                email: currentCompany?.email || 'unknown@company.com'
+            };
+            
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            
+            document.getElementById('userSetResult').innerHTML = `
+                <div class="success">
+                    <h3>✅ Company Set Successfully</h3>
+                    <p><strong>Company:</strong> ${companyName}</p>
+                    <p><strong>ID:</strong> ${companyId}</p>
+                    <p>You can now test challenge creation!</p>
+                </div>
+            `;
+
+            // Enable test button
+            document.getElementById('testButton').disabled = false;
+        }
+
+        function generateSQLCommands(companyId) {
+            const sqlDiv = document.getElementById('sqlCommands');
+            const sqlCommands = `-- Fix verification for your company
+USE Company_Service;
+
+-- Update your company to be verified
+UPDATE companies 
+SET 
+    is_verified = TRUE,
+    is_active = TRUE,
+    updated_at = NOW()
+WHERE id = UNHEX(REPLACE('${companyId}', '-', ''));
+
+-- Verify the update
+SELECT 
+    CONCAT(
+        SUBSTR(HEX(id), 1, 8), '-',
+        SUBSTR(HEX(id), 9, 4), '-', 
+        SUBSTR(HEX(id), 13, 4), '-',
+        SUBSTR(HEX(id), 17, 4), '-',
+        SUBSTR(HEX(id), 21, 12)
+    ) as company_uuid,
+    name,
+    email,
+    is_verified,
+    is_active
+FROM companies 
+WHERE id = UNHEX(REPLACE('${companyId}', '-', ''));`;
+
+            sqlDiv.innerHTML = `
+                <div class="info">
+                    <h3>📝 SQL Commands to Run</h3>
+                    <p>Copy and paste these commands into MySQL Workbench or command line:</p>
+                    <pre>${sqlCommands}</pre>
+                    <button class="copy-button" onclick="copyToClipboard(\`${sqlCommands.replace(/`/g, '\\`')}\`)">📋 Copy SQL</button>
+                </div>
+            `;
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('SQL commands copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('SQL commands copied to clipboard!');
+            });
+        }
+
+        async function testChallengeCreation() {
+            const resultDiv = document.getElementById('testResult');
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            
+            if (!currentUser.companyId) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Error</h3>
+                        <p>No company set. Please set your company first.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                resultDiv.innerHTML = '<p>🚀 Testing challenge creation...</p>';
+                
+                // Set deadline to next week
+                const nextWeek = new Date();
+                nextWeek.setDate(nextWeek.getDate() + 7);
+                
+                const challengeData = {
+                    companyId: currentUser.companyId,
+                    title: 'Test Challenge - API Development',
+                    description: 'Create a REST API for a task management system with authentication.',
+                    requirements: 'Use Node.js or Python, implement JWT auth, include unit tests.',
+                    difficulty: 'INTERMEDIATE',
+                    category: 'Backend Development',
+                    submissionDeadline: nextWeek.toISOString().slice(0, 19),
+                    rewardAmount: 500,
+                    rewardCurrency: 'USD'
+                };
+                
+                const requestBody = {
+                    challenge: challengeData,
+                    internalSolutionBrief: 'Use Express.js with JWT, MongoDB for storage, Jest for testing.'
+                };
+                
+                console.log('🚀 Creating test challenge:', requestBody);
+                
+                const result = await apiCall('/challenges', {
+                    method: 'POST',
+                    body: JSON.stringify(requestBody)
+                });
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>🎉 Challenge Created Successfully!</h3>
+                        <p><strong>Challenge ID:</strong> ${result.id}</p>
+                        <p><strong>Title:</strong> ${result.title}</p>
+                        <p><strong>Company:</strong> ${result.companyName}</p>
+                        <p><strong>Status:</strong> ${result.isActive ? 'Active ✅' : 'Inactive ❌'}</p>
+                        <p><strong>Reward:</strong> $${result.rewardAmount}</p>
+                        
+                        <div style="margin-top: 15px; padding: 10px; background: #e8f5e8; border-radius: 5px;">
+                            <strong>🎯 Success!</strong> Your company is now verified and can create challenges!
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                let errorMessage = error.message;
+                let solution = '';
+                
+                if (errorMessage.includes('Only verified companies can create challenges')) {
+                    solution = `
+                        <div class="highlight" style="background: #fff3cd; padding: 10px; margin-top: 10px; border-radius: 5px;">
+                            <strong>🔧 Solution:</strong> Run the SQL commands above to verify your company in the database.
+                        </div>
+                    `;
+                } else if (errorMessage.includes('Company not found')) {
+                    solution = `
+                        <div class="highlight" style="background: #fff3cd; padding: 10px; margin-top: 10px; border-radius: 5px;">
+                            <strong>🔧 Solution:</strong> Check that your company ID is correct and exists in the database.
+                        </div>
+                    `;
+                }
+                
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Challenge Creation Failed</h3>
+                        <p><strong>Error:</strong> ${errorMessage}</p>
+                        ${solution}
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-load companies on page load
+        window.addEventListener('load', () => {
+            getCompanies();
+        });
+    </script>
+</body>
+</html>

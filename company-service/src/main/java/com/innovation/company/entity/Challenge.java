@@ -71,10 +71,10 @@ public class Challenge {
     @Column(columnDefinition = "TEXT")
     private String tags;
 
-    @Column(name = "is_active")
+    @Column(name = "is_active", columnDefinition = "TINYINT(1) DEFAULT 1")
     private Boolean isActive = true;
 
-    @Column(name = "is_featured")
+    @Column(name = "is_featured", columnDefinition = "TINYINT(1) DEFAULT 0")
     private Boolean isFeatured = false;
 
     // Company's internal solution brief - NOT visible to users

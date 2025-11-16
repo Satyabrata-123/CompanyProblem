@@ -1,4 +1,4 @@
-import { apiClient } from '../../services/api-client.js';
+// API client is available as window.app.api
 
 export class ChallengesListPage {
     constructor() {
@@ -30,7 +30,7 @@ export class ChallengesListPage {
                     <div class="loading">Loading challenges...</div>
                 </div>
             </div>
-        `;
+            `;
     }
 
     async afterRender() {
@@ -40,33 +40,48 @@ export class ChallengesListPage {
 
     async loadChallenges() {
         try {
-            const response = await apiClient.get('/api/challenges');
-            this.challenges = response.data;
+            const response = await window.app.api.get('/challenges');
+            console.log('Challenges API response:', response);
+
+            // Handle different response structures
+            this.challenges = response.data || response || [];
             this.renderChallenges();
         } catch (error) {
             console.error('Error loading challenges:', error);
-            document.getElementById('challengesGrid').innerHTML = 
-                '<div class="error">Failed to load challenges</div>';
+            this.challenges = [];
+            document.getElementById('challengesGrid').innerHTML =
+                '<div class="error">Failed to load challenges. Please check if services are running.</div>';
         }
     }
 
     async loadChallengesByDifficulty(difficulty) {
         try {
-            const url = difficulty === 'all' 
-                ? '/api/challenges' 
-                : `/api/challenges/difficulty/${difficulty}`;
-            
-            const response = await apiClient.get(url);
-            this.challenges = response.data;
+            const url = difficulty === 'all'
+                ? '/challenges'
+                : `/challenges/difficulty/${difficulty}`;
+
+            const response = await window.app.api.get(url);
+            console.log('Challenges by difficulty API response:', response);
+
+            // Handle different response structures
+            this.challenges = response.data || response || [];
             this.renderChallenges();
         } catch (error) {
             console.error('Error loading challenges:', error);
+            this.challenges = [];
+            this.renderChallenges();
         }
     }
 
     renderChallenges() {
         const grid = document.getElementById('challengesGrid');
-        
+
+        // Ensure challenges is an array
+        if (!Array.isArray(this.challenges)) {
+            console.warn('Challenges is not an array:', this.challenges);
+            this.challenges = [];
+        }
+
         if (this.challenges.length === 0) {
             grid.innerHTML = '<div class="no-challenges">No challenges available</div>';
             return;
@@ -101,7 +116,7 @@ export class ChallengesListPage {
                     </button>
                 </div>
             </div>
-        `).join('');
+            `).join('');
     }
 
     setupEventListeners() {
@@ -115,7 +130,7 @@ export class ChallengesListPage {
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('view-challenge')) {
                 const challengeId = e.target.dataset.challengeId;
-                window.router.navigate(`/challenges/${challengeId}`);
+                window.app.router.navigate(`/challenges/${challengeId}`);
             }
         });
     }
@@ -302,3 +317,11 @@ if (!document.getElementById('challenges-css')) {
     style.textContent = challengesCSS;
     document.head.appendChild(style);
 }
+
+export default (params) => {
+    const page = new ChallengesListPage();
+    return page.render().then(html => {
+        setTimeout(() => page.afterRender(), 0);
+        return html;
+    });
+};

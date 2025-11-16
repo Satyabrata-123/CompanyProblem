@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Page Syntax</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        button { padding: 10px 20px; margin: 10px 0; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Test Page Syntax</h1>
+    <button onclick="testPageImports()">Test Page Imports</button>
+    
+    <div id="results"></div>
+
+    <script type="module">
+        window.testPageImports = async function() {
+            const pages = [
+                { name: 'Company Register', path: './src/pages/company/company-register.js' },
+                { name: 'Company Dashboard', path: './src/pages/company/company-dashboard.js' },
+                { name: 'Challenges List', path: './src/pages/challenges/challenges-list.js' },
+                { name: 'Challenge Detail', path: './src/pages/challenges/challenge-detail.js' },
+                { name: 'Submit Solution', path: './src/pages/challenges/submit-solution.js' },
+                { name: 'Solution Detail', path: './src/pages/solutions/solution-detail.js' }
+            ];
+
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+
+            for (const page of pages) {
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'test-result';
+                
+                try {
+                    const module = await import(page.path);
+                    if (module.default) {
+                        resultDiv.className += ' success';
+                        resultDiv.innerHTML = `✅ <strong>${page.name}</strong> - Syntax OK, exports correctly`;
+                    } else {
+                        resultDiv.className += ' error';
+                        resultDiv.innerHTML = `❌ <strong>${page.name}</strong> - Missing default export`;
+                    }
+                } catch (error) {
+                    resultDiv.className += ' error';
+                    resultDiv.innerHTML = `❌ <strong>${page.name}</strong> - Syntax Error: ${error.message}`;
+                }
+                
+                resultsDiv.appendChild(resultDiv);
+            }
+        }
+    </script>
+</body>
+</html>

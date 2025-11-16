@@ -1,4 +1,4 @@
-import { apiClient } from '../../services/api-client.js';
+// API client is available as window.app.api
 
 export class CompanyDashboardPage {
     constructor() {
@@ -29,18 +29,20 @@ export class CompanyDashboardPage {
             }
 
             // Load company details
-            const companyResponse = await apiClient.get(`/api/companies/${currentUser.companyId}`);
-            this.company = companyResponse.data;
+            const companyResponse = await window.app.api.get(`/companies/${currentUser.companyId}`);
+            console.log('Company API response:', companyResponse);
+            this.company = companyResponse.data || companyResponse;
 
             // Load company challenges
-            const challengesResponse = await apiClient.get(`/api/challenges/company/${currentUser.companyId}`);
-            this.challenges = challengesResponse.data;
+            const challengesResponse = await window.app.api.get(`/challenges/company/${currentUser.companyId}`);
+            console.log('Company challenges API response:', challengesResponse);
+            this.challenges = challengesResponse.data || challengesResponse || [];
 
             this.renderDashboard();
         } catch (error) {
             console.error('Error loading company data:', error);
             document.getElementById('dashboardContent').innerHTML = 
-                '<div class="error">Failed to load company dashboard</div>';
+                '<div class="error">Failed to load company dashboard. Please check if services are running.</div>';
         }
     }
 
@@ -49,7 +51,7 @@ export class CompanyDashboardPage {
             <div class="no-company-message">
                 <h2>Company Registration Required</h2>
                 <p>To post challenges and manage your company profile, you need to register your company first.</p>
-                <button class="btn-primary" onclick="window.router.navigate('/company/register')">
+                <button class="btn-primary" onclick="window.app.router.navigate('/company/register')">
                     Register Company
                 </button>
             </div>
@@ -58,6 +60,17 @@ export class CompanyDashboardPage {
 
     renderDashboard() {
         const content = document.getElementById('dashboardContent');
+        
+        // Safety check for company data
+        if (!this.company || !this.company.name) {
+            content.innerHTML = '<div class="error">Company data not available. Please try refreshing the page.</div>';
+            return;
+        }
+
+        // Ensure challenges is an array
+        if (!Array.isArray(this.challenges)) {
+            this.challenges = [];
+        }
         
         content.innerHTML = `
             <div class="dashboard-header">
@@ -70,10 +83,10 @@ export class CompanyDashboardPage {
                     </div>
                 </div>
                 <div class="dashboard-actions">
-                    <button class="btn-primary" onclick="window.router.navigate('/company/challenges/create')">
+                    <button class="btn-primary" onclick="window.app.router.navigate('/company/challenges/create')">
                         Create New Challenge
                     </button>
-                    <button class="btn-secondary" onclick="window.router.navigate('/company/profile')">
+                    <button class="btn-secondary" onclick="window.app.router.navigate('/company/profile')">
                         Edit Profile
                     </button>
                 </div>
@@ -125,7 +138,7 @@ export class CompanyDashboardPage {
                 <div class="no-challenges">
                     <h3>No Challenges Yet</h3>
                     <p>Create your first challenge to start receiving solutions from our community.</p>
-                    <button class="btn-primary" onclick="window.router.navigate('/company/challenges/create')">
+                    <button class="btn-primary" onclick="window.app.router.navigate('/company/challenges/create')">
                         Create Your First Challenge
                     </button>
                 </div>
@@ -168,13 +181,13 @@ export class CompanyDashboardPage {
                 </div>
                 
                 <div class="challenge-actions">
-                    <button class="btn-view" onclick="window.router.navigate('/challenges/${challenge.id}')">
+                    <button class="btn-view" onclick="window.app.router.navigate('/challenges/${challenge.id}')">
                         View Public
                     </button>
-                    <button class="btn-manage" onclick="window.router.navigate('/company/challenges/${challenge.id}/manage')">
+                    <button class="btn-manage" onclick="window.app.router.navigate('/company/challenges/${challenge.id}/manage')">
                         Manage
                     </button>
-                    <button class="btn-solutions" onclick="window.router.navigate('/company/challenges/${challenge.id}/solutions')">
+                    <button class="btn-solutions" onclick="window.app.router.navigate('/company/challenges/${challenge.id}/solutions')">
                         View Solutions (${challenge.currentSubmissions || 0})
                     </button>
                 </div>
@@ -246,13 +259,13 @@ export class CompanyDashboardPage {
                 </div>
                 
                 <div class="challenge-actions">
-                    <button class="btn-view" onclick="window.router.navigate('/challenges/${challenge.id}')">
+                    <button class="btn-view" onclick="window.app.router.navigate('/challenges/${challenge.id}')">
                         View Public
                     </button>
-                    <button class="btn-manage" onclick="window.router.navigate('/company/challenges/${challenge.id}/manage')">
+                    <button class="btn-manage" onclick="window.app.router.navigate('/company/challenges/${challenge.id}/manage')">
                         Manage
                     </button>
-                    <button class="btn-solutions" onclick="window.router.navigate('/company/challenges/${challenge.id}/solutions')">
+                    <button class="btn-solutions" onclick="window.app.router.navigate('/company/challenges/${challenge.id}/solutions')">
                         View Solutions (${challenge.currentSubmissions || 0})
                     </button>
                 </div>
@@ -552,3 +565,11 @@ if (!document.getElementById('company-dashboard-css')) {
     style.textContent = companyDashboardCSS;
     document.head.appendChild(style);
 }
+
+export default (params) => {
+    const page = new CompanyDashboardPage();
+    return page.render().then(html => {
+        setTimeout(() => page.afterRender(), 0);
+        return html;
+    });
+};

@@ -13,25 +13,31 @@ export default async function DashboardPage() {
     totalIdeas: 0,
     userPoints: 0,
     userRank: '--',
-    implementedIdeas: 0
+    implementedIdeas: 0,
+    totalChallenges: 0,
+    activeChallenges: 0
   }
   
   let recentIdeas = []
   let topIdeas = []
+  let recentChallenges = []
   
   try {
-    const [allIdeas, userStats, userRank, topIdeasData] = await Promise.all([
+    const [allIdeas, userStats, userRank, topIdeasData, allChallenges] = await Promise.all([
       window.app.api.getAllIdeas(),
       window.app.api.gamification.getUserStats(currentUser.id),
       window.app.api.gamification.getUserRank(currentUser.id),
-      window.app.api.getTopIdeas()
+      window.app.api.getTopIdeas(),
+      window.app.api.getAllChallenges().catch(() => []) // Gracefully handle if challenges service is down
     ])
     
     dashboardStats = {
       totalIdeas: allIdeas.length,
       userPoints: userStats.totalPoints || 0,
       userRank: userRank || '--',
-      implementedIdeas: userStats.implementedIdeas || 0
+      implementedIdeas: userStats.implementedIdeas || 0,
+      totalChallenges: allChallenges.length,
+      activeChallenges: allChallenges.filter(c => c.isActive).length
     }
     
     recentIdeas = allIdeas
@@ -40,13 +46,17 @@ export default async function DashboardPage() {
       
     topIdeas = topIdeasData.slice(0, 5)
     
+    recentChallenges = allChallenges
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 3)
+    
   } catch (error) {
     console.error('Failed to load dashboard data:', error)
   }
 
   // Initialize dashboard interactions after render
   setTimeout(() => {
-    initializeDashboard(dashboardStats, recentIdeas, topIdeas)
+    initializeDashboard(dashboardStats, recentIdeas, topIdeas, recentChallenges)
   }, 0)
 
   const content = `
@@ -63,7 +73,7 @@ export default async function DashboardPage() {
         </div>
         
         <!-- Stats Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 mb-8">
           <div class="card hover:shadow-md transition-shadow">
             <div class="flex items-center">
               <div class="flex-shrink-0">
@@ -116,6 +126,34 @@ export default async function DashboardPage() {
               <div class="ml-4">
                 <p class="text-sm font-medium text-gray-500">Implemented</p>
                 <p class="text-2xl font-semibold text-gray-900" id="implementedIdeas">${dashboardStats.implementedIdeas}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card hover:shadow-md transition-shadow">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <div class="w-8 h-8 bg-blue-100 rounded-md flex items-center justify-center">
+                  🏢
+                </div>
+              </div>
+              <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500">Total Challenges</p>
+                <p class="text-2xl font-semibold text-gray-900" id="totalChallenges">${dashboardStats.totalChallenges}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card hover:shadow-md transition-shadow">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <div class="w-8 h-8 bg-purple-100 rounded-md flex items-center justify-center">
+                  🚀
+                </div>
+              </div>
+              <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500">Active Challenges</p>
+                <p class="text-2xl font-semibold text-gray-900" id="activeChallenges">${dashboardStats.activeChallenges}</p>
               </div>
             </div>
           </div>
@@ -174,10 +212,59 @@ export default async function DashboardPage() {
                   <span class="mr-2">🔍</span>
                   Browse Ideas
                 </a>
+                <a href="#/challenges" class="btn-secondary w-full flex items-center justify-center">
+                  <span class="mr-2">🎯</span>
+                  Browse Challenges
+                </a>
+                <a href="#/company/dashboard" class="btn-success w-full flex items-center justify-center">
+                  <span class="mr-2">🏢</span>
+                  Company Dashboard
+                </a>
                 <a href="#/leaderboard" class="btn-ghost w-full flex items-center justify-center">
                   <span class="mr-2">🏆</span>
                   View Leaderboard
                 </a>
+              </div>
+            </div>
+
+            <!-- Recent Challenges -->
+            <div class="card">
+              <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-medium text-gray-900">Recent Challenges</h2>
+                <a href="#/challenges" class="text-sm text-primary-600 hover:text-primary-500 font-medium">
+                  View all →
+                </a>
+              </div>
+              <div class="space-y-3">
+                ${recentChallenges.length > 0 ? 
+                  recentChallenges.map(challenge => `
+                    <div class="border-b border-gray-200 pb-3 last:border-b-0 last:pb-0">
+                      <div class="flex items-start justify-between">
+                        <div class="flex-1 min-w-0">
+                          <p class="text-sm font-medium text-gray-900 truncate">
+                            <a href="#/challenges/${challenge.id}" class="hover:text-primary-600">
+                              ${challenge.title}
+                            </a>
+                          </p>
+                          <div class="flex items-center space-x-2 mt-1">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                              challenge.difficulty === 'BEGINNER' ? 'bg-green-100 text-green-800' :
+                              challenge.difficulty === 'INTERMEDIATE' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'
+                            }">
+                              ${challenge.difficulty}
+                            </span>
+                            ${challenge.rewardAmount ? `<span class="text-xs text-green-600 font-medium">$${challenge.rewardAmount}</span>` : ''}
+                          </div>
+                          <p class="text-xs text-gray-500 mt-1">
+                            by ${challenge.companyName} • ${challenge.currentSubmissions || 0} submissions
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  `).join('') :
+                  '<p class="text-gray-500 text-sm text-center py-4">No challenges yet. <a href="#/company/dashboard" class="text-primary-600 hover:text-primary-500">Create one as a company!</a></p>'
+                }
               </div>
             </div>
 
@@ -228,7 +315,7 @@ export default async function DashboardPage() {
   return Layout(content)
 }
 
-function initializeDashboard(dashboardStats, recentIdeas, topIdeas) {
+function initializeDashboard(dashboardStats, recentIdeas, topIdeas, recentChallenges) {
   // Refresh stats periodically
   setInterval(async () => {
     try {

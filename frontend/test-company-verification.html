@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Company Verification Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        .form-group { margin: 10px 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, textarea, select { width: 100%; padding: 8px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Company Verification & Challenge Creation Test</h1>
+    
+    <div class="test-section info">
+        <h2>Step 1: Check Company Status</h2>
+        <button onclick="checkCompanies()">Check All Companies</button>
+        <button onclick="checkTestCompany()">Check Test Company</button>
+        <div id="companyStatus"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Step 2: Register/Login as Company</h2>
+        <div class="form-group">
+            <label>Company ID (UUID):</label>
+            <input type="text" id="companyId" value="550e8400-e29b-41d4-a716-446655440000" placeholder="Company UUID">
+        </div>
+        <div class="form-group">
+            <label>Company Name:</label>
+            <input type="text" id="companyName" value="Test Tech Company" placeholder="Company Name">
+        </div>
+        <button onclick="setCurrentCompany()">Set as Current Company</button>
+        <div id="loginStatus"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Step 3: Create Test Challenge</h2>
+        <form id="testChallengeForm">
+            <div class="form-group">
+                <label>Title:</label>
+                <input type="text" name="title" value="Test Challenge - Build a Simple API" required>
+            </div>
+            <div class="form-group">
+                <label>Description:</label>
+                <textarea name="description" required>Create a REST API that manages user data with CRUD operations.</textarea>
+            </div>
+            <div class="form-group">
+                <label>Requirements:</label>
+                <textarea name="requirements" required>- Use Node.js or Python
+- Include authentication
+- Provide API documentation
+- Include unit tests</textarea>
+            </div>
+            <div class="form-group">
+                <label>Difficulty:</label>
+                <select name="difficulty" required>
+                    <option value="BEGINNER">Beginner</option>
+                    <option value="INTERMEDIATE" selected>Intermediate</option>
+                    <option value="EXPERT">Expert</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Submission Deadline:</label>
+                <input type="datetime-local" name="submissionDeadline" required>
+            </div>
+            <div class="form-group">
+                <label>Internal Solution Brief:</label>
+                <textarea name="internalSolutionBrief" required>Use Express.js with JWT authentication, MongoDB for data storage, and Jest for testing.</textarea>
+            </div>
+            <button type="submit">Create Test Challenge</button>
+        </form>
+        <div id="challengeResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Step 4: Verify Challenge Creation</h2>
+        <button onclick="listChallenges()">List All Challenges</button>
+        <div id="challengesList"></div>
+    </div>
+
+    <script>
+        // Set minimum deadline to tomorrow
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        document.querySelector('input[name="submissionDeadline"]').value = tomorrow.toISOString().slice(0, 16);
+
+        async function apiCall(endpoint, options = {}) {
+            try {
+                const response = await fetch(`/api${endpoint}`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                return response.status === 204 ? null : await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+
+        async function checkCompanies() {
+            const statusDiv = document.getElementById('companyStatus');
+            try {
+                statusDiv.innerHTML = '<p>Loading companies...</p>';
+                const companies = await apiCall('/companies');
+                
+                statusDiv.innerHTML = `
+                    <div class="success">
+                        <h3>Companies Found: ${companies.length}</h3>
+                        <pre>${JSON.stringify(companies, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                statusDiv.innerHTML = `
+                    <div class="error">
+                        <h3>Error Loading Companies</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function checkTestCompany() {
+            const statusDiv = document.getElementById('companyStatus');
+            const companyId = document.getElementById('companyId').value;
+            
+            try {
+                statusDiv.innerHTML = '<p>Checking test company...</p>';
+                const company = await apiCall(`/companies/${companyId}`);
+                
+                statusDiv.innerHTML = `
+                    <div class="${company.isVerified ? 'success' : 'error'}">
+                        <h3>Test Company Status</h3>
+                        <p><strong>Name:</strong> ${company.name}</p>
+                        <p><strong>Verified:</strong> ${company.isVerified ? 'YES ✅' : 'NO ❌'}</p>
+                        <p><strong>Active:</strong> ${company.isActive ? 'YES' : 'NO'}</p>
+                        <pre>${JSON.stringify(company, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                statusDiv.innerHTML = `
+                    <div class="error">
+                        <h3>Test Company Not Found</h3>
+                        <p>${error.message}</p>
+                        <p>Make sure to run the setup-test-data.sql script first!</p>
+                    </div>
+                `;
+            }
+        }
+
+        function setCurrentCompany() {
+            const companyId = document.getElementById('companyId').value;
+            const companyName = document.getElementById('companyName').value;
+            
+            const currentUser = {
+                companyId: companyId,
+                companyName: companyName,
+                role: 'company'
+            };
+            
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            
+            document.getElementById('loginStatus').innerHTML = `
+                <div class="success">
+                    <h3>Company Set Successfully</h3>
+                    <p>Current user set to: ${companyName}</p>
+                    <p>Company ID: ${companyId}</p>
+                </div>
+            `;
+        }
+
+        document.getElementById('testChallengeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const resultDiv = document.getElementById('challengeResult');
+            const formData = new FormData(e.target);
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            
+            if (!currentUser.companyId) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>Error</h3>
+                        <p>Please set current company first!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            try {
+                resultDiv.innerHTML = '<p>Creating challenge...</p>';
+                
+                const challengeData = {
+                    companyId: currentUser.companyId,
+                    title: formData.get('title'),
+                    description: formData.get('description'),
+                    requirements: formData.get('requirements'),
+                    difficulty: formData.get('difficulty'),
+                    submissionDeadline: formData.get('submissionDeadline'),
+                    rewardCurrency: 'USD'
+                };
+                
+                const requestBody = {
+                    challenge: challengeData,
+                    internalSolutionBrief: formData.get('internalSolutionBrief')
+                };
+                
+                console.log('Sending request:', requestBody);
+                
+                const result = await apiCall('/challenges', {
+                    method: 'POST',
+                    body: JSON.stringify(requestBody)
+                });
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>Challenge Created Successfully! 🎉</h3>
+                        <p><strong>Challenge ID:</strong> ${result.id}</p>
+                        <p><strong>Title:</strong> ${result.title}</p>
+                        <p><strong>Status:</strong> ${result.isActive ? 'Active' : 'Inactive'}</p>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>Challenge Creation Failed</h3>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <p>This is likely because the company is not verified in the database.</p>
+                    </div>
+                `;
+            }
+        });
+
+        async function listChallenges() {
+            const listDiv = document.getElementById('challengesList');
+            try {
+                listDiv.innerHTML = '<p>Loading challenges...</p>';
+                const challenges = await apiCall('/challenges');
+                
+                listDiv.innerHTML = `
+                    <div class="success">
+                        <h3>Active Challenges: ${challenges.length}</h3>
+                        <pre>${JSON.stringify(challenges, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                listDiv.innerHTML = `
+                    <div class="error">
+                        <h3>Error Loading Challenges</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-check companies on page load
+        window.addEventListener('load', () => {
+            checkCompanies();
+        });
+    </script>
+</body>
+</html>

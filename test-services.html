@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Backend Services</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .service { margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        .status { font-weight: bold; }
+        .success { color: green; }
+        .error { color: red; }
+        .loading { color: orange; }
+        button { padding: 10px 20px; margin: 10px 0; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Backend Services Test</h1>
+    <button onclick="testServices()">Test All Services</button>
+    
+    <div id="results"></div>
+
+    <script>
+        async function testServices() {
+            const services = [
+                { name: 'API Gateway', url: 'http://localhost:8080/actuator/health' },
+                { name: 'Eureka Server', url: 'http://localhost:8761' },
+                { name: 'Idea Service', url: 'http://localhost:8081/actuator/health' },
+                { name: 'User Service', url: 'http://localhost:8082/actuator/health' },
+                { name: 'Voting Service', url: 'http://localhost:8083/actuator/health' },
+                { name: 'Gamification Service', url: 'http://localhost:8084/actuator/health' },
+                { name: 'AI Service', url: 'http://localhost:8085/actuator/health' },
+                { name: 'Company Service', url: 'http://localhost:8086/actuator/health' }
+            ];
+
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+
+            for (const service of services) {
+                const serviceDiv = document.createElement('div');
+                serviceDiv.className = 'service';
+                serviceDiv.innerHTML = `
+                    <strong>${service.name}</strong> - 
+                    <span class="status loading">Testing...</span>
+                `;
+                resultsDiv.appendChild(serviceDiv);
+
+                try {
+                    const response = await fetch(service.url, { 
+                        method: 'GET',
+                        mode: 'cors'
+                    });
+                    
+                    if (response.ok) {
+                        serviceDiv.innerHTML = `
+                            <strong>${service.name}</strong> - 
+                            <span class="status success">✅ Running (${response.status})</span>
+                        `;
+                    } else {
+                        serviceDiv.innerHTML = `
+                            <strong>${service.name}</strong> - 
+                            <span class="status error">❌ Error (${response.status})</span>
+                        `;
+                    }
+                } catch (error) {
+                    serviceDiv.innerHTML = `
+                        <strong>${service.name}</strong> - 
+                        <span class="status error">❌ Not Running (${error.message})</span>
+                    `;
+                }
+            }
+
+            // Test API Gateway routing
+            await testAPIRouting();
+        }
+
+        async function testAPIRouting() {
+            const routes = [
+                { name: 'Companies API', url: 'http://localhost:8080/api/companies' },
+                { name: 'Challenges API', url: 'http://localhost:8080/api/challenges' },
+                { name: 'Solutions API', url: 'http://localhost:8080/api/solutions' },
+                { name: 'Ideas API', url: 'http://localhost:8080/api/ideas' }
+            ];
+
+            const resultsDiv = document.getElementById('results');
+            
+            const routingHeader = document.createElement('h2');
+            routingHeader.textContent = 'API Gateway Routing Test';
+            resultsDiv.appendChild(routingHeader);
+
+            for (const route of routes) {
+                const routeDiv = document.createElement('div');
+                routeDiv.className = 'service';
+                routeDiv.innerHTML = `
+                    <strong>${route.name}</strong> - 
+                    <span class="status loading">Testing...</span>
+                `;
+                resultsDiv.appendChild(routeDiv);
+
+                try {
+                    const response = await fetch(route.url, { 
+                        method: 'GET',
+                        mode: 'cors'
+                    });
+                    
+                    if (response.ok || response.status === 401 || response.status === 403) {
+                        // 401/403 means the service is running but requires auth
+                        routeDiv.innerHTML = `
+                            <strong>${route.name}</strong> - 
+                            <span class="status success">✅ Routed correctly (${response.status})</span>
+                        `;
+                    } else {
+                        routeDiv.innerHTML = `
+                            <strong>${route.name}</strong> - 
+                            <span class="status error">❌ Routing issue (${response.status})</span>
+                        `;
+                    }
+                } catch (error) {
+                    routeDiv.innerHTML = `
+                        <strong>${route.name}</strong> - 
+                        <span class="status error">❌ Not accessible (${error.message})</span>
+                    `;
+                }
+            }
+        }
+    </script>
+</body>
+</html>

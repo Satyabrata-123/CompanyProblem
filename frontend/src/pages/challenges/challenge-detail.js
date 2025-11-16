@@ -1,4 +1,4 @@
-import { apiClient } from '../../services/api-client.js';
+// API client is available as window.app.api
 
 export class ChallengeDetailPage {
     constructor(challengeId) {
@@ -25,7 +25,7 @@ export class ChallengeDetailPage {
 
     async loadChallenge() {
         try {
-            const response = await apiClient.get(`/api/challenges/${this.challengeId}`);
+            const response = await window.app.api.get(`/challenges/${this.challengeId}`);
             this.challenge = response.data;
             this.renderChallenge();
         } catch (error) {
@@ -37,7 +37,7 @@ export class ChallengeDetailPage {
 
     async loadSolutions() {
         try {
-            const response = await apiClient.get(`/api/solutions/challenge/${this.challengeId}`);
+            const response = await window.app.api.get(`/solutions/challenge/${this.challengeId}`);
             this.solutions = response.data;
             
             // Check if current user has submitted a solution
@@ -59,7 +59,7 @@ export class ChallengeDetailPage {
         
         content.innerHTML = `
             <div class="challenge-header">
-                <button class="back-btn" onclick="window.router.navigate('/challenges')">
+                <button class="back-btn" onclick="window.app.router.navigate('/challenges')">
                     ← Back to Challenges
                 </button>
                 
@@ -226,7 +226,7 @@ export class ChallengeDetailPage {
         const submitBtn = document.getElementById('submitSolutionBtn');
         if (submitBtn) {
             submitBtn.addEventListener('click', () => {
-                window.router.navigate(`/challenges/${this.challengeId}/submit`);
+                window.app.router.navigate(`/challenges/${this.challengeId}/submit`);
             });
         }
 
@@ -234,7 +234,7 @@ export class ChallengeDetailPage {
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('btn-view-solution')) {
                 const solutionId = e.target.dataset.solutionId;
-                window.router.navigate(`/solutions/${solutionId}`);
+                window.app.router.navigate(`/solutions/${solutionId}`);
             }
         });
     }
@@ -533,3 +533,11 @@ if (!document.getElementById('challenge-detail-css')) {
     style.textContent = challengeDetailCSS;
     document.head.appendChild(style);
 }
+
+export default (params) => {
+    const page = new ChallengeDetailPage(params.id);
+    return page.render().then(html => {
+        setTimeout(() => page.afterRender(), 0);
+        return html;
+    });
+};

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Company Pages</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-links { display: flex; flex-direction: column; gap: 10px; max-width: 300px; }
+        .test-link { padding: 10px; background: #007bff; color: white; text-decoration: none; border-radius: 4px; text-align: center; }
+        .test-link:hover { background: #0056b3; }
+        .note { background: #f8f9fa; padding: 15px; border-radius: 4px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Company Challenge System - Test Links</h1>
+    
+    <div class="test-links">
+        <a href="http://localhost:3000/#/company/register" class="test-link">Company Registration</a>
+        <a href="http://localhost:3000/#/company/dashboard" class="test-link">Company Dashboard</a>
+        <a href="http://localhost:3000/#/challenges" class="test-link">Browse Challenges</a>
+        <a href="http://localhost:3000/#/" class="test-link">Main Dashboard</a>
+    </div>
+
+    <div class="note">
+        <h3>Testing Instructions:</h3>
+        <ol>
+            <li>Make sure your frontend is running: <code>cd frontend && npm run dev</code></li>
+            <li>Make sure all backend services are running: <code>start-services.bat</code></li>
+            <li>Click the links above to test each page</li>
+            <li>Check browser console for any errors</li>
+        </ol>
+        
+        <h3>Expected Behavior:</h3>
+        <ul>
+            <li><strong>Company Registration:</strong> Should show registration form</li>
+            <li><strong>Company Dashboard:</strong> Should show "Company Registration Required" if no company</li>
+            <li><strong>Browse Challenges:</strong> Should show challenges list (may be empty initially)</li>
+        </ul>
+    </div>
+</body>
+</html>

@@ -237,6 +237,7 @@ export class Router {
       '/challenges/submit': 'Submit Solution - Innovation Platform',
       '/company/dashboard': 'Company Dashboard - Innovation Platform',
       '/company/register': 'Register Company - Innovation Platform',
+      '/company/challenges/create': 'Create Challenge - Innovation Platform',
       '/profile': 'Profile - Innovation Platform',
       '/leaderboard': 'Leaderboard - Innovation Platform',
       '/admin': 'Admin Dashboard - Innovation Platform'

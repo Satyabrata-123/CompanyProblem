@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug API Calls</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        button { padding: 10px 20px; margin: 10px 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Debug API Calls</h1>
+    
+    <div>
+        <button onclick="testDirectAPI()">Test Direct API Calls</button>
+        <button onclick="testGatewayRouting()">Test Gateway Routing</button>
+        <button onclick="testServiceHealth()">Test Service Health</button>
+    </div>
+    
+    <div id="results"></div>
+
+    <script>
+        async function testDirectAPI() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h2>Direct API Tests</h2>';
+
+            const tests = [
+                { name: 'Companies API', url: '/api/companies' },
+                { name: 'Challenges API', url: '/api/challenges' },
+                { name: 'Ideas API', url: '/api/ideas' }
+            ];
+
+            for (const test of tests) {
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'test-result';
+                
+                try {
+                    const response = await fetch(test.url);
+                    const data = await response.text();
+                    
+                    if (response.ok) {
+                        resultDiv.className += ' success';
+                        resultDiv.innerHTML = `
+                            <strong>✅ ${test.name}</strong><br>
+                            Status: ${response.status}<br>
+                            <details>
+                                <summary>Response Data</summary>
+                                <pre>${data}</pre>
+                            </details>
+                        `;
+                    } else {
+                        resultDiv.className += ' error';
+                        resultDiv.innerHTML = `
+                            <strong>❌ ${test.name}</strong><br>
+                            Status: ${response.status}<br>
+                            Error: ${data}
+                        `;
+                    }
+                } catch (error) {
+                    resultDiv.className += ' error';
+                    resultDiv.innerHTML = `
+                        <strong>❌ ${test.name}</strong><br>
+                        Error: ${error.message}
+                    `;
+                }
+                
+                resultsDiv.appendChild(resultDiv);
+            }
+        }
+
+        async function testGatewayRouting() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h2>Gateway Routing Tests</h2>';
+
+            const tests = [
+                { name: 'API Gateway Health', url: 'http://localhost:8080/actuator/health' },
+                { name: 'Company Service Health', url: 'http://localhost:8086/actuator/health' },
+                { name: 'Idea Service Health', url: 'http://localhost:8081/actuator/health' }
+            ];
+
+            for (const test of tests) {
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'test-result';
+                
+                try {
+                    const response = await fetch(test.url, { mode: 'cors' });
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        resultDiv.className += ' success';
+                        resultDiv.innerHTML = `
+                            <strong>✅ ${test.name}</strong><br>
+                            Status: ${response.status}<br>
+                            Health: ${data.status || 'Unknown'}
+                        `;
+                    } else {
+                        resultDiv.className += ' error';
+                        resultDiv.innerHTML = `
+                            <strong>❌ ${test.name}</strong><br>
+                            Status: ${response.status}
+                        `;
+                    }
+                } catch (error) {
+                    resultDiv.className += ' error';
+                    resultDiv.innerHTML = `
+                        <strong>❌ ${test.name}</strong><br>
+                        Error: ${error.message}
+                    `;
+                }
+                
+                resultsDiv.appendChild(resultDiv);
+            }
+        }
+
+        async function testServiceHealth() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h2>Service Health Check</h2>';
+
+            const services = [
+                { name: 'Eureka Server', port: 8761, path: '' },
+                { name: 'API Gateway', port: 8080, path: '/actuator/health' },
+                { name: 'Idea Service', port: 8081, path: '/actuator/health' },
+                { name: 'User Service', port: 8082, path: '/actuator/health' },
+                { name: 'Voting Service', port: 8083, path: '/actuator/health' },
+                { name: 'Gamification Service', port: 8084, path: '/actuator/health' },
+                { name: 'AI Service', port: 8085, path: '/actuator/health' },
+                { name: 'Company Service', port: 8086, path: '/actuator/health' }
+            ];
+
+            for (const service of services) {
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'test-result';
+                
+                try {
+                    const url = `http://localhost:${service.port}${service.path}`;
+                    const response = await fetch(url, { mode: 'cors' });
+                    
+                    if (response.ok) {
+                        resultDiv.className += ' success';
+                        resultDiv.innerHTML = `
+                            <strong>✅ ${service.name}</strong><br>
+                            Port: ${service.port}<br>
+                            Status: Running
+                        `;
+                    } else {
+                        resultDiv.className += ' warning';
+                        resultDiv.innerHTML = `
+                            <strong>⚠️ ${service.name}</strong><br>
+                            Port: ${service.port}<br>
+                            Status: ${response.status}
+                        `;
+                    }
+                } catch (error) {
+                    resultDiv.className += ' error';
+                    resultDiv.innerHTML = `
+                        <strong>❌ ${service.name}</strong><br>
+                        Port: ${service.port}<br>
+                        Status: Not Running
+                    `;
+                }
+                
+                resultsDiv.appendChild(resultDiv);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-import { apiClient } from '../../services/api-client.js';
+// API client is available as window.app.api
 
 export class SubmitSolutionPage {
     constructor(challengeId) {
@@ -22,7 +22,7 @@ export class SubmitSolutionPage {
 
     async loadChallenge() {
         try {
-            const response = await apiClient.get(`/api/challenges/${this.challengeId}`);
+            const response = await window.app.api.get(`/challenges/${this.challengeId}`);
             this.challenge = response.data;
             this.renderForm();
         } catch (error) {
@@ -41,7 +41,7 @@ export class SubmitSolutionPage {
                 <div class="deadline-passed-message">
                     <h2>Submission Deadline Passed</h2>
                     <p>The deadline for this challenge has passed. No new submissions are accepted.</p>
-                    <button class="btn-back" onclick="window.router.navigate('/challenges/${this.challengeId}')">
+                    <button class="btn-back" onclick="window.app.router.navigate('/challenges/${this.challengeId}')">
                         Back to Challenge
                     </button>
                 </div>
@@ -51,7 +51,7 @@ export class SubmitSolutionPage {
 
         content.innerHTML = `
             <div class="submit-solution-header">
-                <button class="back-btn" onclick="window.router.navigate('/challenges/${this.challengeId}')">
+                <button class="back-btn" onclick="window.app.router.navigate('/challenges/${this.challengeId}')">
                     ← Back to Challenge
                 </button>
                 <h1>Submit Your Solution</h1>
@@ -106,7 +106,7 @@ export class SubmitSolutionPage {
                     </div>
 
                     <div class="form-actions">
-                        <button type="button" class="btn-cancel" onclick="window.router.navigate('/challenges/${this.challengeId}')">
+                        <button type="button" class="btn-cancel" onclick="window.app.router.navigate('/challenges/${this.challengeId}')">
                             Cancel
                         </button>
                         <button type="submit" class="btn-submit" id="submitBtn">
@@ -167,16 +167,16 @@ export class SubmitSolutionPage {
                 demoUrl: formData.get('demoUrl') || null
             };
 
-            const response = await apiClient.post('/api/solutions', solutionData);
+            const response = await window.app.api.post('/solutions', solutionData);
             
             // Update challenge submission count
-            await apiClient.put(`/api/challenges/${this.challengeId}/increment-submissions`);
+            await window.app.api.put(`/challenges/${this.challengeId}/increment-submissions`);
             
             // Show success message and redirect
             this.showSuccessMessage();
             
             setTimeout(() => {
-                window.router.navigate(`/challenges/${this.challengeId}`);
+                window.app.router.navigate(`/challenges/${this.challengeId}`);
             }, 2000);
 
         } catch (error) {
@@ -197,10 +197,10 @@ export class SubmitSolutionPage {
                 <p>Your solution has been submitted and is now under review.</p>
                 <p>You will be notified when the evaluation is complete.</p>
                 <div class="success-actions">
-                    <button class="btn-primary" onclick="window.router.navigate('/challenges/${this.challengeId}')">
+                    <button class="btn-primary" onclick="window.app.router.navigate('/challenges/${this.challengeId}')">
                         View Challenge
                     </button>
-                    <button class="btn-secondary" onclick="window.router.navigate('/challenges')">
+                    <button class="btn-secondary" onclick="window.app.router.navigate('/challenges')">
                         Browse More Challenges
                     </button>
                 </div>
@@ -510,3 +510,11 @@ if (!document.getElementById('submit-solution-css')) {
     style.textContent = submitSolutionCSS;
     document.head.appendChild(style);
 }
+
+export default (params) => {
+    const page = new SubmitSolutionPage(params.id);
+    return page.render().then(html => {
+        setTimeout(() => page.afterRender(), 0);
+        return html;
+    });
+};

@@ -56,10 +56,10 @@ public class Company {
     @Column(name = "contact_person", length = 100)
     private String contactPerson;
 
-    @Column(name = "is_verified")
+    @Column(name = "is_verified", columnDefinition = "TINYINT(1) DEFAULT 0")
     private Boolean isVerified = false;
 
-    @Column(name = "is_active")
+    @Column(name = "is_active", columnDefinition = "TINYINT(1) DEFAULT 1")
     private Boolean isActive = true;
 
     @CreationTimestamp

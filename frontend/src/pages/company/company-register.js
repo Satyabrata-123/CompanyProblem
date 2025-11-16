@@ -1,213 +1,4 @@
-import { apiClient } from '../../services/api-client.js';
-
-export class CompanyRegisterPage {
-    constructor() {
-        this.isSubmitting = false;
-    }
-
-    async render() {
-        return `
-            <div class="company-register-page">
-                <div class="register-container">
-                    <div class="register-header">
-                        <h1>Register Your Company</h1>
-                        <p>Join our platform to post challenges and find innovative solutions</p>
-                    </div>
-
-                    <form id="companyRegisterForm" class="register-form">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="name">Company Name *</label>
-                                <input type="text" id="name" name="name" required 
-                                       placeholder="Enter your company name">
-                            </div>
-                            <div class="form-group">
-                                <label for="email">Company Email *</label>
-                                <input type="email" id="email" name="email" required 
-                                       placeholder="company@example.com">
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="description">Company Description</label>
-                            <textarea id="description" name="description" rows="4"
-                                      placeholder="Brief description of your company and what you do..."></textarea>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="industry">Industry</label>
-                                <select id="industry" name="industry">
-                                    <option value="">Select Industry</option>
-                                    <option value="Technology">Technology</option>
-                                    <option value="Healthcare">Healthcare</option>
-                                    <option value="Finance">Finance</option>
-                                    <option value="Education">Education</option>
-                                    <option value="Manufacturing">Manufacturing</option>
-                                    <option value="Retail">Retail</option>
-                                    <option value="Energy">Energy</option>
-                                    <option value="Transportation">Transportation</option>
-                                    <option value="Real Estate">Real Estate</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="size">Company Size</label>
-                                <select id="size" name="size">
-                                    <option value="">Select Size</option>
-                                    <option value="STARTUP">Startup (1-10 employees)</option>
-                                    <option value="SMALL">Small (11-50 employees)</option>
-                                    <option value="MEDIUM">Medium (51-200 employees)</option>
-                                    <option value="LARGE">Large (201-1000 employees)</option>
-                                    <option value="ENTERPRISE">Enterprise (1000+ employees)</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="website">Website</label>
-                                <input type="url" id="website" name="website" 
-                                       placeholder="https://www.yourcompany.com">
-                            </div>
-                            <div class="form-group">
-                                <label for="phone">Phone Number</label>
-                                <input type="tel" id="phone" name="phone" 
-                                       placeholder="+1 (555) 123-4567">
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="contactPerson">Contact Person</label>
-                            <input type="text" id="contactPerson" name="contactPerson" 
-                                   placeholder="Name of primary contact person">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="address">Address</label>
-                            <textarea id="address" name="address" rows="3"
-                                      placeholder="Company address..."></textarea>
-                        </div>
-
-                        <div class="form-actions">
-                            <button type="button" class="btn-cancel" onclick="window.router.navigate('/')">
-                                Cancel
-                            </button>
-                            <button type="submit" class="btn-submit" id="submitBtn">
-                                Register Company
-                            </button>
-                        </div>
-                    </form>
-
-                    <div class="verification-notice">
-                        <h3>📋 What happens next?</h3>
-                        <ul>
-                            <li>Your company registration will be reviewed by our team</li>
-                            <li>Verification typically takes 1-2 business days</li>
-                            <li>Once verified, you can start posting challenges</li>
-                            <li>You'll receive an email notification when verification is complete</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    async afterRender() {
-        this.setupEventListeners();
-    }
-
-    setupEventListeners() {
-        const form = document.getElementById('companyRegisterForm');
-        form.addEventListener('submit', (e) => this.handleSubmit(e));
-    }
-
-    async handleSubmit(e) {
-        e.preventDefault();
-        
-        if (this.isSubmitting) return;
-        
-        const submitBtn = document.getElementById('submitBtn');
-        const originalText = submitBtn.textContent;
-        
-        try {
-            this.isSubmitting = true;
-            submitBtn.textContent = 'Registering...';
-            submitBtn.disabled = true;
-
-            const formData = new FormData(e.target);
-            const companyData = {
-                name: formData.get('name'),
-                description: formData.get('description') || null,
-                email: formData.get('email'),
-                phone: formData.get('phone') || null,
-                website: formData.get('website') || null,
-                industry: formData.get('industry') || null,
-                size: formData.get('size') || null,
-                address: formData.get('address') || null,
-                contactPerson: formData.get('contactPerson') || null
-            };
-
-            const response = await apiClient.post('/api/companies', companyData);
-            
-            // Update user's company association in localStorage
-            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-            currentUser.companyId = response.id;
-            localStorage.setItem('currentUser', JSON.stringify(currentUser));
-            
-            this.showSuccessMessage();
-            
-            setTimeout(() => {
-                window.router.navigate('/company/dashboard');
-            }, 3000);
-
-        } catch (error) {
-            console.error('Error registering company:', error);
-            this.showErrorMessage(error.message || 'Failed to register company');
-            
-            submitBtn.textContent = originalText;
-            submitBtn.disabled = false;
-            this.isSubmitting = false;
-        }
-    }
-
-    showSuccessMessage() {
-        const container = document.querySelector('.register-container');
-        container.innerHTML = `
-            <div class="success-message">
-                <div class="success-icon">✅</div>
-                <h2>Company Registered Successfully!</h2>
-                <p>Thank you for registering your company with our platform.</p>
-                <div class="next-steps">
-                    <h3>Next Steps:</h3>
-                    <ul>
-                        <li>✅ Company registration submitted</li>
-                        <li>⏳ Awaiting verification (1-2 business days)</li>
-                        <li>📧 You'll receive an email when verified</li>
-                        <li>🚀 Start posting challenges once verified</li>
-                    </ul>
-                </div>
-                <p class="redirect-notice">Redirecting to your company dashboard...</p>
-            </div>
-        `;
-    }
-
-    showErrorMessage(message) {
-        const existingError = document.querySelector('.error-message');
-        if (existingError) {
-            existingError.remove();
-        }
-
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-message';
-        errorDiv.innerHTML = `
-            <strong>Error:</strong> ${message}
-            <button class="close-error" onclick="this.parentElement.remove()">×</button>
-        `;
-        
-        document.querySelector('.register-form').prepend(errorDiv);
-    }
-}
+// API client is available as window.app.api
 
 // CSS for company registration
 const companyRegisterCSS = `
@@ -454,10 +245,219 @@ if (!document.getElementById('company-register-css')) {
     document.head.appendChild(style);
 }
 
+export class CompanyRegisterPage {
+    constructor() {
+        this.isSubmitting = false;
+    }
+
+    async render() {
+        return `
+            <div class="company-register-page">
+                <div class="register-container">
+                    <div class="register-header">
+                        <h1>Register Your Company</h1>
+                        <p>Join our platform to post challenges and find innovative solutions</p>
+                    </div>
+
+                    <form id="companyRegisterForm" class="register-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="name">Company Name *</label>
+                                <input type="text" id="name" name="name" required 
+                                       placeholder="Enter your company name">
+                            </div>
+                            <div class="form-group">
+                                <label for="email">Company Email *</label>
+                                <input type="email" id="email" name="email" required 
+                                       placeholder="company@example.com">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="description">Company Description</label>
+                            <textarea id="description" name="description" rows="4"
+                                      placeholder="Brief description of your company and what you do..."></textarea>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="industry">Industry</label>
+                                <select id="industry" name="industry">
+                                    <option value="">Select Industry</option>
+                                    <option value="Technology">Technology</option>
+                                    <option value="Healthcare">Healthcare</option>
+                                    <option value="Finance">Finance</option>
+                                    <option value="Education">Education</option>
+                                    <option value="Manufacturing">Manufacturing</option>
+                                    <option value="Retail">Retail</option>
+                                    <option value="Energy">Energy</option>
+                                    <option value="Transportation">Transportation</option>
+                                    <option value="Real Estate">Real Estate</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="size">Company Size</label>
+                                <select id="size" name="size">
+                                    <option value="">Select Size</option>
+                                    <option value="STARTUP">Startup (1-10 employees)</option>
+                                    <option value="SMALL">Small (11-50 employees)</option>
+                                    <option value="MEDIUM">Medium (51-200 employees)</option>
+                                    <option value="LARGE">Large (201-1000 employees)</option>
+                                    <option value="ENTERPRISE">Enterprise (1000+ employees)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="website">Website</label>
+                                <input type="url" id="website" name="website" 
+                                       placeholder="https://www.yourcompany.com">
+                            </div>
+                            <div class="form-group">
+                                <label for="phone">Phone Number</label>
+                                <input type="tel" id="phone" name="phone" 
+                                       placeholder="+1 (555) 123-4567">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="contactPerson">Contact Person</label>
+                            <input type="text" id="contactPerson" name="contactPerson" 
+                                   placeholder="Name of primary contact person">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="address">Address</label>
+                            <textarea id="address" name="address" rows="3"
+                                      placeholder="Company address..."></textarea>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn-cancel" onclick="window.app.router.navigate('/')">
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn-submit" id="submitBtn">
+                                Register Company
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="verification-notice">
+                        <h3>📋 What happens next?</h3>
+                        <ul>
+                            <li>Your company registration will be reviewed by our team</li>
+                            <li>Verification typically takes 1-2 business days</li>
+                            <li>Once verified, you can start posting challenges</li>
+                            <li>You'll receive an email notification when verification is complete</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    async afterRender() {
+        this.setupEventListeners();
+    }
+
+    setupEventListeners() {
+        const form = document.getElementById('companyRegisterForm');
+        form.addEventListener('submit', (e) => this.handleSubmit(e));
+    }
+
+    async handleSubmit(e) {
+        e.preventDefault();
+        
+        if (this.isSubmitting) return;
+        
+        const submitBtn = document.getElementById('submitBtn');
+        const originalText = submitBtn.textContent;
+        
+        try {
+            this.isSubmitting = true;
+            submitBtn.textContent = 'Registering...';
+            submitBtn.disabled = true;
+
+            const formData = new FormData(e.target);
+            const companyData = {
+                name: formData.get('name'),
+                description: formData.get('description') || null,
+                email: formData.get('email'),
+                phone: formData.get('phone') || null,
+                website: formData.get('website') || null,
+                industry: formData.get('industry') || null,
+                size: formData.get('size') || null,
+                address: formData.get('address') || null,
+                contactPerson: formData.get('contactPerson') || null
+            };
+
+            const response = await window.app.api.post('/companies', companyData);
+            
+            // Update user's company association in localStorage
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            currentUser.companyId = response.id;
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            
+            this.showSuccessMessage();
+            
+            setTimeout(() => {
+                window.app.router.navigate('/company/dashboard');
+            }, 3000);
+
+        } catch (error) {
+            console.error('Error registering company:', error);
+            this.showErrorMessage(error.message || 'Failed to register company');
+            
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+            this.isSubmitting = false;
+        }
+    }
+
+    showSuccessMessage() {
+        const container = document.querySelector('.register-container');
+        container.innerHTML = `
+            <div class="success-message">
+                <div class="success-icon">✅</div>
+                <h2>Company Registered Successfully!</h2>
+                <p>Thank you for registering your company with our platform.</p>
+                <div class="next-steps">
+                    <h3>Next Steps:</h3>
+                    <ul>
+                        <li>✅ Company registration submitted</li>
+                        <li>⏳ Awaiting verification (1-2 business days)</li>
+                        <li>📧 You'll receive an email when verified</li>
+                        <li>🚀 Start posting challenges once verified</li>
+                    </ul>
+                </div>
+                <p class="redirect-notice">Redirecting to your company dashboard...</p>
+            </div>
+        `;
+    }
+
+    showErrorMessage(message) {
+        const existingError = document.querySelector('.error-message');
+        if (existingError) {
+            existingError.remove();
+        }
+
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-message';
+        errorDiv.innerHTML = `
+            <strong>Error:</strong> ${message}
+            <button class="close-error" onclick="this.parentElement.remove()">×</button>
+        `;
+        
+        document.querySelector('.register-form').prepend(errorDiv);
+    }
+}
+
 export default (params) => {
     const page = new CompanyRegisterPage();
     return page.render().then(html => {
         setTimeout(() => page.afterRender(), 0);
         return html;
     });
-};
+}

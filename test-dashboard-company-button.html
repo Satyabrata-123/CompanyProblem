@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Company Button Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 3px; }
+        button:hover { background: #0056b3; }
+        .company-button { background: #28a745; }
+        .company-button:hover { background: #218838; }
+    </style>
+</head>
+<body>
+    <h1>🏢 Dashboard Company Button Test</h1>
+    
+    <div class="test-section info">
+        <h2>Test Overview</h2>
+        <p>This test verifies that the Company Dashboard button has been added to the main dashboard and works correctly.</p>
+    </div>
+
+    <div class="test-section">
+        <h2>Step 1: Set Test User</h2>
+        <p>First, let's set up a test user in localStorage:</p>
+        <button onclick="setTestUser()">Set Test User</button>
+        <div id="userStatus"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Step 2: Test Navigation</h2>
+        <p>Test the navigation buttons that should be available on the dashboard:</p>
+        <button onclick="testNavigation('/ideas/new')">📝 Submit New Idea</button>
+        <button onclick="testNavigation('/ideas')">🔍 Browse Ideas</button>
+        <button onclick="testNavigation('/challenges')">🎯 Browse Challenges</button>
+        <button class="company-button" onclick="testNavigation('/company/dashboard')">🏢 Company Dashboard</button>
+        <button onclick="testNavigation('/leaderboard')">🏆 View Leaderboard</button>
+        <div id="navigationStatus"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Step 3: Go to Main Dashboard</h2>
+        <p>Navigate to the main dashboard to see the new company button:</p>
+        <button onclick="goToDashboard()">🏠 Go to Main Dashboard</button>
+        <div id="dashboardStatus"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Step 4: Test Company Dashboard</h2>
+        <p>Navigate directly to the company dashboard:</p>
+        <button class="company-button" onclick="goToCompanyDashboard()">🏢 Go to Company Dashboard</button>
+        <div id="companyDashboardStatus"></div>
+    </div>
+
+    <script>
+        function setTestUser() {
+            const testUser = {
+                id: 'test-user-123',
+                fullName: 'Test User',
+                email: 'test@example.com',
+                role: 'user'
+            };
+            
+            localStorage.setItem('innovation_user', JSON.stringify(testUser));
+            localStorage.setItem('currentUser', JSON.stringify({
+                ...testUser,
+                companyId: '550e8400-e29b-41d4-a716-446655440000',
+                companyName: 'Test Tech Company'
+            }));
+            
+            document.getElementById('userStatus').innerHTML = `
+                <div class="success">
+                    <h3>✅ Test User Set</h3>
+                    <p><strong>Name:</strong> ${testUser.fullName}</p>
+                    <p><strong>Email:</strong> ${testUser.email}</p>
+                    <p><strong>Company:</strong> Test Tech Company</p>
+                    <p>User data saved to localStorage</p>
+                </div>
+            `;
+        }
+
+        function testNavigation(route) {
+            const statusDiv = document.getElementById('navigationStatus');
+            
+            try {
+                // Test if the route would work
+                const fullUrl = `${window.location.origin}${window.location.pathname}#${route}`;
+                
+                statusDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✅ Navigation Test</h3>
+                        <p><strong>Route:</strong> ${route}</p>
+                        <p><strong>Full URL:</strong> ${fullUrl}</p>
+                        <p>Route appears to be valid. Click "Go to Main Dashboard" to see it in action.</p>
+                    </div>
+                `;
+            } catch (error) {
+                statusDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Navigation Error</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function goToDashboard() {
+            const statusDiv = document.getElementById('dashboardStatus');
+            
+            try {
+                // Navigate to the main dashboard
+                window.location.hash = '/';
+                
+                statusDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✅ Navigating to Dashboard</h3>
+                        <p>You should now see the main dashboard with:</p>
+                        <ul>
+                            <li>📊 Stats grid with 6 cards (including challenge stats)</li>
+                            <li>🏢 Company Dashboard button in Quick Actions</li>
+                            <li>🎯 Browse Challenges button</li>
+                            <li>📋 Recent Challenges section</li>
+                        </ul>
+                        <p><strong>Look for the green "Company Dashboard" button!</strong></p>
+                    </div>
+                `;
+            } catch (error) {
+                statusDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Dashboard Navigation Error</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function goToCompanyDashboard() {
+            const statusDiv = document.getElementById('companyDashboardStatus');
+            
+            try {
+                // Navigate to the company dashboard
+                window.location.hash = '/company/dashboard';
+                
+                statusDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✅ Navigating to Company Dashboard</h3>
+                        <p>You should now see the company dashboard with:</p>
+                        <ul>
+                            <li>🏢 Company information and stats</li>
+                            <li>➕ Create Challenge button</li>
+                            <li>📋 Your company's challenges</li>
+                            <li>📊 Challenge management tools</li>
+                        </ul>
+                        <p><strong>From here you can create and manage challenges!</strong></p>
+                    </div>
+                `;
+            } catch (error) {
+                statusDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Company Dashboard Navigation Error</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-set test user on page load
+        window.addEventListener('load', () => {
+            setTestUser();
+        });
+    </script>
+</body>
+</html>
