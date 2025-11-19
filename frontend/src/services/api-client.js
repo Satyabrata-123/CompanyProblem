@@ -307,6 +307,10 @@ export class ApiClient {
     return this.post('/ai/categorize', ideaData)
   }
 
+  async compareIdeaWithSolution(comparisonData) {
+    return this.post('/ai/compare-solution', comparisonData)
+  }
+
   async findDuplicates(title, description) {
     return this.post(`/ai/duplicates?title=${encodeURIComponent(title)}&description=${encodeURIComponent(description)}`)
   }

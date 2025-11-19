@@ -91,7 +91,7 @@ public class ChallengeController {
     @GetMapping("/company/{companyId}")
     public ResponseEntity<List<ChallengeDTO>> getChallengesByCompany(
             @PathVariable UUID companyId) {
-        return ResponseEntity.ok(challengeService.getChallengesByCompany(companyId));
+        return ResponseEntity.ok(difficultyBasedChallengeService.getChallengesByCompany(companyId));
     }
 
     @GetMapping("/{id}")

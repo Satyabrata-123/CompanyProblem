@@ -2,6 +2,8 @@ package com.innovation.ai.controller;
 
 import com.innovation.ai.dto.CategorizeRequest;
 import com.innovation.ai.dto.CategorizeResponse;
+import com.innovation.ai.dto.CompareIdeaWithSolutionRequest;
+import com.innovation.ai.dto.CompareIdeaWithSolutionResponse;
 import com.innovation.ai.service.AiService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -32,6 +34,13 @@ public class AiController {
             @RequestParam String description) {
         List<UUID> duplicates = aiService.findDuplicates(title, description);
         return ResponseEntity.ok(duplicates);
+    }
+
+    @PostMapping("/compare-solution")
+    public ResponseEntity<CompareIdeaWithSolutionResponse> compareIdeaWithSolution(
+            @RequestBody CompareIdeaWithSolutionRequest request) {
+        CompareIdeaWithSolutionResponse response = aiService.compareIdeaWithSolution(request);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/health")

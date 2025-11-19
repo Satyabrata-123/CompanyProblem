@@ -73,7 +73,7 @@ class App {
       '/challenges/:id': () => import('./pages/challenges/challenge-detail.js'),
       '/challenges/:id/submit': () => import('./pages/challenges/submit-solution.js'),
       '/challenges/:difficulty/:challengeId/submit-idea': () => import('./pages/challenges/submit-idea.js'),
-      '/company/dashboard': () => import('./pages/company/company-dashboard.js'),
+      '/company/dashboard': () => import('./pages/company/company-dashboard-table.js'),
       '/company/register': () => import('./pages/company/company-register.js'),
       '/company/challenges/create': () => import('./pages/company/create-challenge.js'),
       '/solutions/:id': () => import('./pages/solutions/solution-detail.js'),

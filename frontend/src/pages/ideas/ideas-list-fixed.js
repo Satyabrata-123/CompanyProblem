@@ -196,8 +196,14 @@ function createIdeaCard(idea, currentUser, isUserIdeas) {
             <span>${idea.voteCount || 0} votes</span>
             <span>${idea.commentCount || 0} comments</span>
           </div>
-          <div class="text-xs text-gray-500">
-            ${timeAgo}
+          <div class="flex items-center space-x-2">
+            <button onclick="submitIdeaForProblem('${idea.id}', '${idea.title}')" 
+                    class="submit-idea-btn text-xs bg-green-100 text-green-700 hover:bg-green-200 px-3 py-1 rounded-full transition-colors">
+              💡 Submit Idea
+            </button>
+            <div class="text-xs text-gray-500">
+              ${timeAgo}
+            </div>
           </div>
         </div>
       </div>
@@ -211,6 +217,20 @@ function initializeIdeasListPage(ideas, filters, isUserIdeas) {
     window.toggleFilters = () => {
       const panel = document.getElementById('filtersPanel')
       if (panel) panel.classList.toggle('hidden')
+    }
+
+    // Submit idea for problem function
+    window.submitIdeaForProblem = (ideaId, ideaTitle) => {
+      // Store the original idea info for context
+      localStorage.setItem('originalIdeaContext', JSON.stringify({
+        ideaId: ideaId,
+        ideaTitle: ideaTitle,
+        timestamp: new Date().toISOString()
+      }))
+      
+      // Navigate to the challenge idea submission page
+      // We'll treat this as an "INTERMEDIATE" difficulty challenge for now
+      window.app.router.navigate(`/challenges/INTERMEDIATE/${ideaId}/submit-idea`)
     }
 
   } catch (error) {

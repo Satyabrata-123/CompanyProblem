@@ -32,7 +32,8 @@ public class ChallengeIdea {
     private UUID id;
 
     // Reference to the challenge (can be from any difficulty table)
-    @Column(name = "challenge_id", nullable = false)
+    // Nullable for community ideas (idea-based submissions)
+    @Column(name = "challenge_id", nullable = true)
     private UUID challengeId;
 
     @Enumerated(EnumType.STRING)

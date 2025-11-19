@@ -168,6 +168,25 @@ public class DifficultyBasedChallengeService {
         }
     }
 
+    public List<ChallengeDTO> getChallengesByCompany(UUID companyId) {
+        List<ChallengeDTO> allChallenges = new ArrayList<>();
+        
+        // Get from all three tables
+        beginnerRepository.findActiveByCompanyId(companyId)
+                .forEach(c -> allChallenges.add(convertBeginnerToDTO(c)));
+        
+        intermediateRepository.findActiveByCompanyId(companyId)
+                .forEach(c -> allChallenges.add(convertIntermediateToDTO(c)));
+        
+        expertRepository.findActiveByCompanyId(companyId)
+                .forEach(c -> allChallenges.add(convertExpertToDTO(c)));
+        
+        // Sort by creation date (newest first)
+        allChallenges.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
+        
+        return allChallenges;
+    }
+
     public ChallengeDTO getChallengeById(UUID id, String difficulty) {
         switch (difficulty.toUpperCase()) {
             case "BEGINNER":
@@ -189,34 +208,66 @@ public class DifficultyBasedChallengeService {
 
     // Challenge Idea methods
     public ChallengeIdeaDTO submitIdeaForChallenge(ChallengeIdeaDTO ideaDTO) {
-        ChallengeIdea idea = ChallengeIdea.builder()
-                .challengeId(ideaDTO.getChallengeId())
-                .challengeDifficulty(ChallengeIdea.ChallengeDifficulty.valueOf(ideaDTO.getChallengeDifficulty()))
-                .userId(ideaDTO.getUserId())
-                .userName(ideaDTO.getUserName())
-                .userEmail(ideaDTO.getUserEmail())
-                .title(ideaDTO.getTitle())
-                .description(ideaDTO.getDescription())
-                .solutionApproach(ideaDTO.getSolutionApproach())
-                .technicalDetails(ideaDTO.getTechnicalDetails())
-                .implementationPlan(ideaDTO.getImplementationPlan())
-                .attachmentUrls(ideaDTO.getAttachmentUrls())
-                .githubRepository(ideaDTO.getGithubRepository())
-                .demoUrl(ideaDTO.getDemoUrl())
-                .status(ChallengeIdea.IdeaStatus.SUBMITTED)
-                .submittedAt(LocalDateTime.now())
-                .voteCount(0)
-                .commentCount(0)
-                .viewCount(0)
-                .isWinner(false)
-                .build();
+        try {
+            System.out.println("Submitting idea for challenge: " + ideaDTO);
+            
+            // Validate required fields
+            if (ideaDTO.getUserId() == null) {
+                throw new IllegalArgumentException("User ID is required");
+            }
+            if (ideaDTO.getTitle() == null || ideaDTO.getTitle().trim().isEmpty()) {
+                throw new IllegalArgumentException("Title is required");
+            }
+            if (ideaDTO.getDescription() == null || ideaDTO.getDescription().trim().isEmpty()) {
+                throw new IllegalArgumentException("Description is required");
+            }
+            
+            // Handle COMMUNITY difficulty (for idea-based submissions)
+            ChallengeIdea.ChallengeDifficulty difficulty;
+            if ("COMMUNITY".equals(ideaDTO.getChallengeDifficulty())) {
+                difficulty = ChallengeIdea.ChallengeDifficulty.INTERMEDIATE; // Default to intermediate for community ideas
+            } else {
+                difficulty = ChallengeIdea.ChallengeDifficulty.valueOf(ideaDTO.getChallengeDifficulty());
+            }
+            
+            ChallengeIdea idea = ChallengeIdea.builder()
+                    .challengeId(ideaDTO.getChallengeId()) // Can be null for community ideas
+                    .challengeDifficulty(difficulty)
+                    .userId(ideaDTO.getUserId())
+                    .userName(ideaDTO.getUserName() != null ? ideaDTO.getUserName() : "Anonymous")
+                    .userEmail(ideaDTO.getUserEmail() != null ? ideaDTO.getUserEmail() : "no-email@example.com")
+                    .title(ideaDTO.getTitle())
+                    .description(ideaDTO.getDescription())
+                    .solutionApproach(ideaDTO.getSolutionApproach())
+                    .technicalDetails(ideaDTO.getTechnicalDetails())
+                    .implementationPlan(ideaDTO.getImplementationPlan())
+                    .attachmentUrls(ideaDTO.getAttachmentUrls())
+                    .githubRepository(ideaDTO.getGithubRepository())
+                    .demoUrl(ideaDTO.getDemoUrl())
+                    .status(ChallengeIdea.IdeaStatus.SUBMITTED)
+                    .submittedAt(LocalDateTime.now())
+                    .voteCount(0)
+                    .commentCount(0)
+                    .viewCount(0)
+                    .isWinner(false)
+                    .build();
 
-        ChallengeIdea saved = challengeIdeaRepository.save(idea);
-        
-        // Increment challenge submission count
-        incrementChallengeSubmissions(ideaDTO.getChallengeId(), ideaDTO.getChallengeDifficulty());
-        
-        return convertIdeaToDTO(saved);
+            System.out.println("Saving challenge idea: " + idea);
+            ChallengeIdea saved = challengeIdeaRepository.save(idea);
+            System.out.println("Challenge idea saved successfully with ID: " + saved.getId());
+            
+            // Only increment challenge submission count for actual challenges, not community ideas
+            if (!"COMMUNITY".equals(ideaDTO.getChallengeDifficulty()) && ideaDTO.getChallengeId() != null) {
+                incrementChallengeSubmissions(ideaDTO.getChallengeId(), ideaDTO.getChallengeDifficulty());
+            }
+            
+            return convertIdeaToDTO(saved);
+            
+        } catch (Exception e) {
+            System.err.println("Error in submitIdeaForChallenge: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to submit idea: " + e.getMessage(), e);
+        }
     }
 
     public List<ChallengeIdeaDTO> getIdeasForChallenge(UUID challengeId) {
@@ -230,25 +281,37 @@ public class DifficultyBasedChallengeService {
     }
 
     private void incrementChallengeSubmissions(UUID challengeId, String difficulty) {
-        switch (difficulty.toUpperCase()) {
-            case "BEGINNER":
-                beginnerRepository.findById(challengeId).ifPresent(challenge -> {
-                    challenge.setCurrentSubmissions(challenge.getCurrentSubmissions() + 1);
-                    beginnerRepository.save(challenge);
-                });
-                break;
-            case "INTERMEDIATE":
-                intermediateRepository.findById(challengeId).ifPresent(challenge -> {
-                    challenge.setCurrentSubmissions(challenge.getCurrentSubmissions() + 1);
-                    intermediateRepository.save(challenge);
-                });
-                break;
-            case "EXPERT":
-                expertRepository.findById(challengeId).ifPresent(challenge -> {
-                    challenge.setCurrentSubmissions(challenge.getCurrentSubmissions() + 1);
-                    expertRepository.save(challenge);
-                });
-                break;
+        try {
+            switch (difficulty.toUpperCase()) {
+                case "BEGINNER":
+                    beginnerRepository.findById(challengeId).ifPresent(challenge -> {
+                        Integer currentSubmissions = challenge.getCurrentSubmissions();
+                        challenge.setCurrentSubmissions(currentSubmissions != null ? currentSubmissions + 1 : 1);
+                        beginnerRepository.save(challenge);
+                        System.out.println("Incremented BEGINNER challenge submissions to: " + challenge.getCurrentSubmissions());
+                    });
+                    break;
+                case "INTERMEDIATE":
+                    intermediateRepository.findById(challengeId).ifPresent(challenge -> {
+                        Integer currentSubmissions = challenge.getCurrentSubmissions();
+                        challenge.setCurrentSubmissions(currentSubmissions != null ? currentSubmissions + 1 : 1);
+                        intermediateRepository.save(challenge);
+                        System.out.println("Incremented INTERMEDIATE challenge submissions to: " + challenge.getCurrentSubmissions());
+                    });
+                    break;
+                case "EXPERT":
+                    expertRepository.findById(challengeId).ifPresent(challenge -> {
+                        Integer currentSubmissions = challenge.getCurrentSubmissions();
+                        challenge.setCurrentSubmissions(currentSubmissions != null ? currentSubmissions + 1 : 1);
+                        expertRepository.save(challenge);
+                        System.out.println("Incremented EXPERT challenge submissions to: " + challenge.getCurrentSubmissions());
+                    });
+                    break;
+            }
+        } catch (Exception e) {
+            System.err.println("Error incrementing challenge submissions: " + e.getMessage());
+            e.printStackTrace();
+            // Don't throw - this is not critical enough to fail the submission
         }
     }
 

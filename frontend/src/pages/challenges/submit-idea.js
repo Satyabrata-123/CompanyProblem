@@ -9,33 +9,89 @@ export class SubmitIdeaPage {
     }
 
     async render() {
-        // Load challenge details
-        try {
-            this.challenge = await window.app.api.get(`/challenges/${this.difficulty}/${this.challengeId}`);
-        } catch (error) {
-            console.error('Failed to load challenge:', error);
-            return `
-                <div class="max-w-4xl mx-auto py-6 px-4">
-                    <div class="error-message">
-                        <h2>Challenge Not Found</h2>
-                        <p>The challenge you're looking for doesn't exist or has been removed.</p>
-                        <a href="#/challenges" class="btn-primary">← Back to Challenges</a>
+        // Check if this is an idea-based submission or challenge submission
+        const originalIdeaContext = JSON.parse(localStorage.getItem('originalIdeaContext') || 'null');
+        const challengeContext = JSON.parse(localStorage.getItem('challengeContext') || 'null');
+        
+        const isIdeaBasedSubmission = originalIdeaContext && originalIdeaContext.ideaId === this.challengeId;
+        const isChallengeSubmission = challengeContext && challengeContext.challengeId === this.challengeId;
+
+        if (isIdeaBasedSubmission) {
+            // This is a submission for an existing idea/problem
+            try {
+                const originalIdea = await window.app.api.getIdeaById(this.challengeId);
+                this.challenge = {
+                    id: originalIdea.id,
+                    title: `Solution for: ${originalIdea.title}`,
+                    description: originalIdea.description,
+                    companyName: 'Community Problem',
+                    submissionDeadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+                    rewardAmount: null,
+                    currentSubmissions: 0,
+                    maxSubmissions: null
+                };
+            } catch (error) {
+                console.error('Failed to load original idea:', error);
+                return `
+                    <div class="max-w-4xl mx-auto py-6 px-4">
+                        <div class="error-message">
+                            <h2>Original Idea Not Found</h2>
+                            <p>The idea you're trying to submit a solution for doesn't exist or has been removed.</p>
+                            <a href="#/ideas" class="btn-primary">← Back to Ideas</a>
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
+            }
+        } else if (isChallengeSubmission) {
+            // This is a submission for a company challenge
+            try {
+                this.challenge = await window.app.api.getChallengeByIdAndDifficulty(this.difficulty, this.challengeId);
+            } catch (error) {
+                console.error('Failed to load challenge:', error);
+                return `
+                    <div class="max-w-4xl mx-auto py-6 px-4">
+                        <div class="error-message">
+                            <h2>Challenge Not Found</h2>
+                            <p>The challenge you're looking for doesn't exist or has been removed.</p>
+                            <a href="#/challenges" class="btn-primary">← Back to Challenges</a>
+                        </div>
+                    </div>
+                `;
+            }
+        } else {
+            // Fallback: try to load challenge details (original functionality)
+            try {
+                this.challenge = await window.app.api.getChallengeByIdAndDifficulty(this.difficulty, this.challengeId);
+            } catch (error) {
+                console.error('Failed to load challenge:', error);
+                return `
+                    <div class="max-w-4xl mx-auto py-6 px-4">
+                        <div class="error-message">
+                            <h2>Challenge Not Found</h2>
+                            <p>The challenge you're looking for doesn't exist or has been removed.</p>
+                            <a href="#/challenges" class="btn-primary">← Back to Challenges</a>
+                        </div>
+                    </div>
+                `;
+            }
         }
+
+        // Store for use in template
+        this.isIdeaBasedSubmission = isIdeaBasedSubmission;
 
         return `
             <div class="max-w-4xl mx-auto py-6 px-4">
                 <div class="submit-idea-container">
                     <!-- Header -->
                     <div class="page-header">
-                        <button class="back-btn" onclick="window.app.router.navigate('/challenges/${this.challengeId}')">
-                            ← Back to Challenge
+                        <button class="back-btn" onclick="window.app.router.navigate('${isIdeaBasedSubmission ? '/ideas' : '/challenges/' + this.challengeId}')">
+                            ← Back to ${isIdeaBasedSubmission ? 'Ideas' : 'Challenge'}
                         </button>
                         <div class="challenge-info">
-                            <div class="difficulty-badge ${this.difficulty.toLowerCase()}">${this.difficulty}</div>
-                            <h1>Submit Your Idea</h1>
+                            <div class="difficulty-badge ${isIdeaBasedSubmission ? 'community' : this.difficulty.toLowerCase()}">
+                                ${isIdeaBasedSubmission ? 'COMMUNITY' : this.difficulty}
+                            </div>
+                            <h1>${isIdeaBasedSubmission ? 'Submit Your Solution' : 'Submit Your Idea'}</h1>
                             <h2 class="challenge-title">${this.challenge.title}</h2>
                             <p class="challenge-company">by ${this.challenge.companyName}</p>
                         </div>
@@ -43,44 +99,56 @@ export class SubmitIdeaPage {
 
                     <!-- Challenge Summary -->
                     <div class="challenge-summary">
-                        <h3>Challenge Overview</h3>
+                        <h3>${isIdeaBasedSubmission ? 'Original Problem' : 'Challenge Overview'}</h3>
                         <p>${this.challenge.description}</p>
                         <div class="challenge-details">
-                            <div class="detail-item">
-                                <strong>Deadline:</strong> ${new Date(this.challenge.submissionDeadline).toLocaleDateString()}
-                            </div>
-                            <div class="detail-item">
-                                <strong>Reward:</strong> ${this.challenge.rewardAmount ? '$' + this.challenge.rewardAmount : 'No monetary reward'}
-                            </div>
-                            <div class="detail-item">
-                                <strong>Submissions:</strong> ${this.challenge.currentSubmissions}/${this.challenge.maxSubmissions || '∞'}
-                            </div>
+                            ${!isIdeaBasedSubmission ? `
+                                <div class="detail-item">
+                                    <strong>Deadline:</strong> ${new Date(this.challenge.submissionDeadline).toLocaleDateString()}
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Reward:</strong> ${this.challenge.rewardAmount ? '$' + this.challenge.rewardAmount : 'No monetary reward'}
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Submissions:</strong> ${this.challenge.currentSubmissions}/${this.challenge.maxSubmissions || '∞'}
+                                </div>
+                            ` : `
+                                <div class="detail-item">
+                                    <strong>Type:</strong> Community Problem Solution
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Status:</strong> Open for Solutions
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Reward:</strong> Community Recognition
+                                </div>
+                            `}
                         </div>
                     </div>
 
                     <!-- Idea Submission Form -->
                     <form id="submitIdeaForm" class="idea-form">
                         <div class="form-section">
-                            <h3>Your Solution Idea</h3>
+                            <h3>${isIdeaBasedSubmission ? 'Your Solution' : 'Your Solution Idea'}</h3>
                             
                             <div class="form-group">
-                                <label for="title">Idea Title *</label>
+                                <label for="title">${isIdeaBasedSubmission ? 'Solution Title' : 'Idea Title'} *</label>
                                 <input type="text" id="title" name="title" required 
-                                       placeholder="Give your solution a catchy title">
-                                <small>Choose a clear, descriptive title for your solution approach</small>
+                                       placeholder="${isIdeaBasedSubmission ? 'Give your solution a descriptive title' : 'Give your solution a catchy title'}">
+                                <small>${isIdeaBasedSubmission ? 'Choose a clear title that describes your solution to the problem' : 'Choose a clear, descriptive title for your solution approach'}</small>
                             </div>
 
                             <div class="form-group">
-                                <label for="description">Idea Description *</label>
+                                <label for="description">${isIdeaBasedSubmission ? 'Solution Description' : 'Idea Description'} *</label>
                                 <textarea id="description" name="description" required rows="6"
-                                          placeholder="Describe your solution idea in detail..."></textarea>
-                                <small>Explain what your solution does and how it addresses the challenge</small>
+                                          placeholder="${isIdeaBasedSubmission ? 'Describe how your solution addresses the problem...' : 'Describe your solution idea in detail...'}"></textarea>
+                                <small>${isIdeaBasedSubmission ? 'Explain how your solution solves the original problem' : 'Explain what your solution does and how it addresses the challenge'}</small>
                             </div>
 
                             <div class="form-group">
                                 <label for="solutionApproach">Solution Approach *</label>
                                 <textarea id="solutionApproach" name="solutionApproach" required rows="6"
-                                          placeholder="Explain your approach to solving this challenge..."></textarea>
+                                          placeholder="${isIdeaBasedSubmission ? 'Explain your approach to solving this problem...' : 'Explain your approach to solving this challenge...'}"></textarea>
                                 <small>Detail your methodology, algorithms, or strategies</small>
                             </div>
                         </div>
@@ -130,11 +198,11 @@ export class SubmitIdeaPage {
                         </div>
 
                         <div class="form-actions">
-                            <button type="button" class="btn-secondary" onclick="window.app.router.navigate('/challenges/${this.challengeId}')">
+                            <button type="button" class="btn-secondary" onclick="window.app.router.navigate('${isIdeaBasedSubmission ? '/ideas' : '/challenges/' + this.challengeId}')">
                                 Cancel
                             </button>
                             <button type="submit" class="btn-primary" id="submitBtn">
-                                Submit My Idea
+                                ${isIdeaBasedSubmission ? 'Submit My Solution' : 'Submit My Idea'}
                             </button>
                         </div>
                     </form>
@@ -157,9 +225,14 @@ export class SubmitIdeaPage {
 
         if (this.isSubmitting) return;
 
+        // Check both currentUser and innovation_user for authentication
         const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-        if (!currentUser.id) {
-            this.showError('Please log in to submit an idea');
+        const innovationUser = JSON.parse(localStorage.getItem('innovation_user') || '{}');
+        
+        const user = currentUser.id ? currentUser : innovationUser;
+        
+        if (!user.id) {
+            this.showLoginRequired();
             return;
         }
 
@@ -172,18 +245,18 @@ export class SubmitIdeaPage {
             submitBtn.disabled = true;
 
             const formData = new FormData(e.target);
-            
+
             // Process attachment URLs (convert textarea to JSON array)
             const attachmentUrls = formData.get('attachmentUrls');
-            const urlsArray = attachmentUrls ? 
+            const urlsArray = attachmentUrls ?
                 attachmentUrls.split('\n').filter(url => url.trim()).map(url => url.trim()) : [];
 
             const ideaData = {
                 challengeId: this.challengeId,
-                challengeDifficulty: this.difficulty,
-                userId: currentUser.id,
-                userName: currentUser.fullName || currentUser.name,
-                userEmail: currentUser.email,
+                challengeDifficulty: this.isIdeaBasedSubmission ? 'COMMUNITY' : this.difficulty,
+                userId: user.id,
+                userName: user.fullName || user.name || 'Anonymous',
+                userEmail: user.email || 'no-email@example.com',
                 title: formData.get('title'),
                 description: formData.get('description'),
                 solutionApproach: formData.get('solutionApproach'),
@@ -201,7 +274,13 @@ export class SubmitIdeaPage {
             this.showSuccessMessage(response);
 
             setTimeout(() => {
-                window.app.router.navigate(`/challenges/${this.challengeId}`);
+                if (this.isIdeaBasedSubmission) {
+                    // Clear the context and go back to ideas
+                    localStorage.removeItem('originalIdeaContext');
+                    window.app.router.navigate('/ideas');
+                } else {
+                    window.app.router.navigate(`/challenges/${this.challengeId}`);
+                }
             }, 3000);
 
         } catch (error) {
@@ -216,11 +295,13 @@ export class SubmitIdeaPage {
 
     showSuccessMessage(idea) {
         const container = document.querySelector('.submit-idea-container');
+        const isIdeaBasedSubmission = this.isIdeaBasedSubmission;
+
         container.innerHTML = `
             <div class="success-message">
                 <div class="success-icon">🎉</div>
-                <h2>Idea Submitted Successfully!</h2>
-                <p>Your solution idea has been submitted for review.</p>
+                <h2>${isIdeaBasedSubmission ? 'Solution Submitted Successfully!' : 'Idea Submitted Successfully!'}</h2>
+                <p>Your ${isIdeaBasedSubmission ? 'solution' : 'solution idea'} has been submitted for review.</p>
                 
                 <div class="idea-summary">
                     <h3>Your Submission:</h3>
@@ -232,14 +313,21 @@ export class SubmitIdeaPage {
                 <div class="next-steps">
                     <h3>What's Next:</h3>
                     <ul>
-                        <li>✅ Your idea is now visible to the company</li>
-                        <li>📧 You'll receive notifications about status updates</li>
-                        <li>⭐ Other users can vote on your idea</li>
-                        <li>🏆 The company will evaluate and potentially select winners</li>
+                        ${isIdeaBasedSubmission ? `
+                            <li>✅ Your solution is now visible to the community</li>
+                            <li>📧 You'll receive notifications about feedback</li>
+                            <li>⭐ Other users can vote on your solution</li>
+                            <li>🏆 Your solution may help others with similar problems</li>
+                        ` : `
+                            <li>✅ Your idea is now visible to the company</li>
+                            <li>📧 You'll receive notifications about status updates</li>
+                            <li>⭐ Other users can vote on your idea</li>
+                            <li>🏆 The company will evaluate and potentially select winners</li>
+                        `}
                     </ul>
                 </div>
                 
-                <p class="redirect-notice">Redirecting to challenge page...</p>
+                <p class="redirect-notice">Redirecting to ${isIdeaBasedSubmission ? 'ideas page' : 'challenge page'}...</p>
             </div>
         `;
     }
@@ -333,6 +421,11 @@ const submitIdeaCSS = `
 .difficulty-badge.expert {
     background: rgba(239, 68, 68, 0.2);
     color: #dc2626;
+}
+
+.difficulty-badge.community {
+    background: rgba(147, 51, 234, 0.2);
+    color: #7c3aed;
 }
 
 .challenge-summary {
@@ -575,7 +668,7 @@ if (!document.getElementById('submit-idea-css')) {
 export default (params) => {
     const challengeId = params.challengeId;
     const difficulty = params.difficulty || 'INTERMEDIATE'; // Default fallback
-    
+
     const page = new SubmitIdeaPage(challengeId, difficulty);
     return page.render().then(html => {
         setTimeout(() => page.afterRender(), 0);

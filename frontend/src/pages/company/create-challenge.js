@@ -156,12 +156,12 @@ export class CreateChallengePage {
 
     async handleSubmit(e) {
         e.preventDefault();
-        
+
         if (this.isSubmitting) return;
-        
+
         const submitBtn = document.getElementById('submitBtn');
         const originalText = submitBtn.textContent;
-        
+
         try {
             this.isSubmitting = true;
             submitBtn.textContent = 'Creating Challenge...';
@@ -169,7 +169,7 @@ export class CreateChallengePage {
 
             const formData = new FormData(e.target);
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-            
+
             if (!currentUser || !currentUser.companyId) {
                 throw new Error('Company information not found. Please register your company first.');
             }
@@ -195,17 +195,41 @@ export class CreateChallengePage {
                 challenge: challengeData,
                 internalSolutionBrief: internalSolutionBrief
             });
-            
+
             this.showSuccessMessage();
-            
+
             setTimeout(() => {
                 window.app.router.navigate('/company/dashboard');
             }, 3000);
 
         } catch (error) {
             console.error('Error creating challenge:', error);
-            this.showErrorMessage(error.message || 'Failed to create challenge');
             
+            let errorMessage = error.message || 'Failed to create challenge';
+            
+            // Provide specific guidance for common errors
+            if (errorMessage.includes('Only verified companies can create challenges')) {
+                errorMessage = `
+                    <strong>Company Not Verified</strong><br>
+                    Your company needs to be verified before creating challenges.<br><br>
+                    <strong>To fix this:</strong><br>
+                    1. Run the setup-verified-company.ps1 script<br>
+                    2. Or contact support to verify your company<br>
+                    3. Make sure you're logged in with the correct company ID
+                `;
+            } else if (errorMessage.includes('Company not found')) {
+                errorMessage = `
+                    <strong>Company Not Found</strong><br>
+                    The company ID in your profile doesn't exist in the database.<br><br>
+                    <strong>To fix this:</strong><br>
+                    1. Register your company first<br>
+                    2. Or run the setup-verified-company.ps1 script for testing<br>
+                    3. Check that your company ID is correct: ${currentUser.companyId}
+                `;
+            }
+            
+            this.showErrorMessage(errorMessage);
+
             submitBtn.textContent = originalText;
             submitBtn.disabled = false;
             this.isSubmitting = false;
@@ -242,11 +266,14 @@ export class CreateChallengePage {
         const errorDiv = document.createElement('div');
         errorDiv.className = 'error-message';
         errorDiv.innerHTML = `
-            <strong>Error:</strong> ${message}
+            ${message}
             <button class="close-error" onclick="this.parentElement.remove()">×</button>
         `;
-        
+
         document.querySelector('.create-form').prepend(errorDiv);
+        
+        // Scroll to error message
+        errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 }
 

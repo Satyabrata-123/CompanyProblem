@@ -5,6 +5,8 @@ com\innovation\common\dto\CompanyDTO.class
 com\innovation\common\dto\IdeaDTO.class
 com\innovation\common\dto\CommentDTO$CommentDTOBuilder.class
 com\innovation\common\enums\IdeaStatus.class
+com\innovation\common\dto\ChallengeIdeaDTO.class
+com\innovation\common\dto\ChallengeIdeaDTO$ChallengeIdeaDTOBuilder.class
 com\innovation\common\dto\UserDTO.class
 com\innovation\common\dto\ChallengeDTO.class
 com\innovation\common\dto\VoteDTO$VoteDTOBuilder.class

@@ -111,9 +111,17 @@ export class ChallengesListPage {
                     <span class="deadline">
                         Deadline: ${new Date(challenge.submissionDeadline).toLocaleDateString()}
                     </span>
-                    <button class="btn-primary view-challenge" data-challenge-id="${challenge.id}">
-                        View Challenge
-                    </button>
+                    <div class="challenge-actions">
+                        <button class="btn-secondary view-challenge" data-challenge-id="${challenge.id}">
+                            View Details
+                        </button>
+                        <button class="btn-submit-idea" 
+                                data-challenge-id="${challenge.id}" 
+                                data-difficulty="${challenge.difficulty}"
+                                data-title="${challenge.title}">
+                            💡 Submit Idea
+                        </button>
+                    </div>
                 </div>
             </div>
             `).join('');
@@ -132,7 +140,30 @@ export class ChallengesListPage {
                 const challengeId = e.target.dataset.challengeId;
                 window.app.router.navigate(`/challenges/${challengeId}`);
             }
+            
+            // Submit idea buttons
+            if (e.target.classList.contains('btn-submit-idea')) {
+                const challengeId = e.target.dataset.challengeId;
+                const difficulty = e.target.dataset.difficulty;
+                const title = e.target.dataset.title;
+                
+                this.submitIdeaForChallenge(challengeId, difficulty, title);
+            }
         });
+    }
+
+    submitIdeaForChallenge(challengeId, difficulty, title) {
+        // Store challenge context for the submission form
+        localStorage.setItem('challengeContext', JSON.stringify({
+            challengeId: challengeId,
+            difficulty: difficulty,
+            challengeTitle: title,
+            timestamp: new Date().toISOString(),
+            type: 'challenge' // Distinguish from community ideas
+        }));
+        
+        // Navigate to the challenge idea submission page
+        window.app.router.navigate(`/challenges/${difficulty}/${challengeId}/submit-idea`);
     }
 
     truncateText(text, maxLength) {
@@ -283,6 +314,11 @@ const challengesCSS = `
     color: #6c757d;
 }
 
+.challenge-actions {
+    display: flex;
+    gap: 8px;
+}
+
 .btn-primary {
     background: #007bff;
     color: white;
@@ -296,6 +332,37 @@ const challengesCSS = `
 
 .btn-primary:hover {
     background: #0056b3;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.btn-secondary:hover {
+    background: #545b62;
+}
+
+.btn-submit-idea {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.btn-submit-idea:hover {
+    background: #218838;
 }
 
 .loading, .error, .no-challenges {

@@ -12,6 +12,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import com.innovation.ai.dto.CategorizeRequest;
 import com.innovation.ai.dto.CategorizeResponse;
+import com.innovation.ai.dto.CompareIdeaWithSolutionRequest;
+import com.innovation.ai.dto.CompareIdeaWithSolutionResponse;
 
 import lombok.RequiredArgsConstructor;
 
@@ -336,5 +338,218 @@ public class AiService {
             System.err.println("Failed to update idea AI score for idea " + ideaId + ": " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Compare a submitted idea with the company's solution to determine if it matches
+     */
+    public CompareIdeaWithSolutionResponse compareIdeaWithSolution(CompareIdeaWithSolutionRequest request) {
+        try {
+            System.out.println("Comparing idea " + request.getIdeaId() + " with company solution for challenge " + request.getChallengeId());
+
+            // Build prompt for AI comparison
+            String prompt = String.format("""
+                You are an expert evaluator comparing a user's submitted idea with a company's official solution to a challenge.
+                
+                CHALLENGE:
+                Title: %s
+                Description: %s
+                
+                COMPANY'S SOLUTION:
+                %s
+                
+                USER'S SUBMITTED IDEA:
+                Title: %s
+                Description: %s
+                
+                Please analyze how well the user's idea matches the company's solution and provide:
+                1. A match score from 0-100 (where 100 means perfect match)
+                2. Match level: EXCELLENT (90-100), GOOD (70-89), PARTIAL (40-69), or POOR (0-39)
+                3. Brief feedback explaining the match quality
+                4. Strengths of the user's idea
+                5. Areas for improvement
+                
+                Respond in this exact JSON format:
+                {
+                  "matchScore": <number 0-100>,
+                  "matchLevel": "<EXCELLENT|GOOD|PARTIAL|POOR>",
+                  "feedback": "<brief explanation>",
+                  "strengths": "<what the idea does well>",
+                  "improvements": "<what could be improved>"
+                }
+                """,
+                request.getChallengeTitle(),
+                request.getChallengeDescription(),
+                request.getCompanySolution(),
+                request.getIdeaTitle(),
+                request.getIdeaDescription()
+            );
+
+            // Call Gemini API
+            Map<String, Object> requestBody = Map.of(
+                    "contents", List.of(
+                            Map.of("parts", List.of(
+                                    Map.of("text", prompt)
+                            ))
+                    )
+            );
+
+            System.out.println("Calling Gemini API for idea-solution comparison...");
+
+            Map<String, Object> response = webClientBuilder.build()
+                    .post()
+                    .uri("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyC9CIMQf0zwRBPyJUUIGD1cOBqhrpFoXl4")
+                    .header("Content-Type", "application/json")
+                    .bodyValue(requestBody)
+                    .retrieve()
+                    .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
+                    })
+                    .block();
+
+            System.out.println("Gemini API comparison response received");
+
+            // Parse the response
+            CompareIdeaWithSolutionResponse comparisonResult = parseComparisonResponse(response, request);
+            
+            System.out.println("Comparison complete - Match Score: " + comparisonResult.getMatchScore() + 
+                             ", Level: " + comparisonResult.getMatchLevel());
+
+            return comparisonResult;
+
+        } catch (Exception e) {
+            System.err.println("Error comparing idea with solution: " + e.getMessage());
+            e.printStackTrace();
+
+            // Return fallback response
+            return CompareIdeaWithSolutionResponse.builder()
+                    .ideaId(request.getIdeaId())
+                    .challengeId(request.getChallengeId())
+                    .matchScore(50.0)
+                    .matchLevel("PARTIAL")
+                    .feedback("Unable to perform AI comparison at this time. Manual review recommended.")
+                    .isCorrectSolution(false)
+                    .strengths("Idea submitted successfully")
+                    .improvements("Awaiting detailed evaluation")
+                    .build();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private CompareIdeaWithSolutionResponse parseComparisonResponse(Map<String, Object> response, CompareIdeaWithSolutionRequest request) {
+        try {
+            List<Map<String, Object>> candidates = (List<Map<String, Object>>) response.get("candidates");
+            if (candidates != null && !candidates.isEmpty()) {
+                Map<String, Object> content = (Map<String, Object>) candidates.get(0).get("content");
+                if (content != null) {
+                    List<Map<String, Object>> parts = (List<Map<String, Object>>) content.get("parts");
+                    if (parts != null && !parts.isEmpty()) {
+                        String text = (String) parts.get(0).get("text");
+                        if (text != null) {
+                            return parseComparisonJson(text, request);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to parse Gemini comparison response: " + e.getMessage());
+        }
+
+        // Fallback response
+        return CompareIdeaWithSolutionResponse.builder()
+                .ideaId(request.getIdeaId())
+                .challengeId(request.getChallengeId())
+                .matchScore(50.0)
+                .matchLevel("PARTIAL")
+                .feedback("Comparison analysis incomplete")
+                .isCorrectSolution(false)
+                .strengths("Idea received")
+                .improvements("Pending detailed review")
+                .build();
+    }
+
+    private CompareIdeaWithSolutionResponse parseComparisonJson(String text, CompareIdeaWithSolutionRequest request) {
+        try {
+            System.out.println("Parsing comparison JSON from: " + text);
+
+            // Remove markdown code blocks if present
+            text = text.replaceAll("```json\\s*", "").replaceAll("```\\s*", "").trim();
+
+            // Simple JSON parsing (you might want to use a proper JSON library)
+            Double matchScore = extractJsonNumber(text, "matchScore");
+            String matchLevel = extractJsonString(text, "matchLevel");
+            String feedback = extractJsonString(text, "feedback");
+            String strengths = extractJsonString(text, "strengths");
+            String improvements = extractJsonString(text, "improvements");
+
+            // Validate and set defaults
+            if (matchScore == null || matchScore < 0 || matchScore > 100) {
+                matchScore = 50.0;
+            }
+            if (matchLevel == null || matchLevel.isEmpty()) {
+                matchLevel = determineMatchLevel(matchScore);
+            }
+
+            boolean isCorrectSolution = matchScore >= 70.0;
+
+            return CompareIdeaWithSolutionResponse.builder()
+                    .ideaId(request.getIdeaId())
+                    .challengeId(request.getChallengeId())
+                    .matchScore(matchScore)
+                    .matchLevel(matchLevel)
+                    .feedback(feedback != null ? feedback : "Comparison completed")
+                    .isCorrectSolution(isCorrectSolution)
+                    .strengths(strengths != null ? strengths : "Idea shows understanding of the challenge")
+                    .improvements(improvements != null ? improvements : "Consider refining the approach")
+                    .build();
+
+        } catch (Exception e) {
+            System.err.println("Failed to parse comparison JSON: " + e.getMessage());
+            
+            return CompareIdeaWithSolutionResponse.builder()
+                    .ideaId(request.getIdeaId())
+                    .challengeId(request.getChallengeId())
+                    .matchScore(50.0)
+                    .matchLevel("PARTIAL")
+                    .feedback("Analysis incomplete")
+                    .isCorrectSolution(false)
+                    .strengths("Idea submitted")
+                    .improvements("Awaiting review")
+                    .build();
+        }
+    }
+
+    private Double extractJsonNumber(String json, String key) {
+        try {
+            String pattern = "\"" + key + "\"\\s*:\\s*([0-9.]+)";
+            java.util.regex.Pattern p = java.util.regex.Pattern.compile(pattern);
+            java.util.regex.Matcher m = p.matcher(json);
+            if (m.find()) {
+                return Double.parseDouble(m.group(1));
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to extract number for key: " + key);
+        }
+        return null;
+    }
+
+    private String extractJsonString(String json, String key) {
+        try {
+            String pattern = "\"" + key + "\"\\s*:\\s*\"([^\"]+)\"";
+            java.util.regex.Pattern p = java.util.regex.Pattern.compile(pattern);
+            java.util.regex.Matcher m = p.matcher(json);
+            if (m.find()) {
+                return m.group(1);
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to extract string for key: " + key);
+        }
+        return null;
+    }
+
+    private String determineMatchLevel(Double score) {
+        if (score >= 90) return "EXCELLENT";
+        if (score >= 70) return "GOOD";
+        if (score >= 40) return "PARTIAL";
+        return "POOR";
     }
 }

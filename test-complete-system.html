@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete System Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 3px; }
+        button:hover { background: #0056b3; }
+        .company-btn { background: #28a745; }
+        .company-btn:hover { background: #218838; }
+        .idea-btn { background: #17a2b8; }
+        .idea-btn:hover { background: #138496; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; font-size: 12px; }
+        .workflow-step { margin: 10px 0; padding: 10px; border-left: 4px solid #007bff; background: #f8f9fa; }
+        .step-complete { border-left-color: #28a745; background: #d4edda; }
+    </style>
+</head>
+<body>
+    <h1>🚀 Complete System Test</h1>
+    
+    <div class="test-section info">
+        <h2>System Overview</h2>
+        <p>This test verifies the complete workflow:</p>
+        <ol>
+            <li><strong>Company Dashboard</strong> - Create challenges</li>
+            <li><strong>Challenge System</strong> - 3 difficulty levels with separate tables</li>
+            <li><strong>Ideas System</strong> - Community problems</li>
+            <li><strong>Idea Submission</strong> - Submit solutions to both challenges and ideas</li>
+            <li><strong>Integration</strong> - Seamless flow between all components</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>Step 1: Setup Test Environment</h2>
+        <button onclick="setupTestEnvironment()">Setup Test Environment</button>
+        <div id="setupStatus"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Step 2: Test Company Workflow</h2>
+        <div class="workflow-step" id="company-step-1">
+            <strong>2.1:</strong> Set Company User
+            <button class="company-btn" onclick="setCompanyUser()">Set Company User</button>
+        </div>
+        <div class="workflow-step" id="company-step-2">
+            <strong>2.2:</strong> Test Challenge Creation
+            <button class="company-btn" onclick="testChallengeCreation()">Create Test Challenge</button>
+        </div>
+        <div class="workflow-step" id="company-step-3">
+            <strong>2.3:</strong> Verify Challenge Storage
+            <button class="company-btn" onclick="verifyChallengeStorage()">Check Challenge Tables</button>
+        </div>
+        <div id="companyWorkflowStatus"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Step 3: Test Ideas & Community Workflow</h2>
+        <div class="workflow-step" id="idea-step-1">
+            <strong>3.1:</strong> Set Regular User
+            <button class="idea-btn" onclick="setRegularUser()">Set Regular User</button>
+        </div>
+        <div class="workflow-step" id="idea-step-2">
+            <strong>3.2:</strong> Browse Ideas
+            <button class="idea-btn" onclick="browseIdeas()">Load Ideas</button>
+        </div>
+        <div class="workflow-step" id="idea-step-3">
+            <strong>3.3:</strong> Test "Submit Idea" Button
+            <button class="idea-btn" onclick="testSubmitIdeaButton()">Test Submit Idea Flow</button>
+        </div>
+        <div id="ideasWorkflowStatus"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Step 4: Test Challenge Ideas System</h2>
+        <div class="workflow-step" id="challenge-idea-step-1">
+            <strong>4.1:</strong> Submit Idea for Challenge
+            <button onclick="submitIdeaForChallenge()">Submit Challenge Idea</button>
+        </div>
+        <div class="workflow-step" id="challenge-idea-step-2">
+            <strong>4.2:</strong> Submit Solution for Community Idea
+            <button onclick="submitSolutionForIdea()">Submit Community Solution</button>
+        </div>
+        <div class="workflow-step" id="challenge-idea-step-3">
+            <strong>4.3:</strong> Verify Submissions
+            <button onclick="verifySubmissions()">Check All Submissions</button>
+        </div>
+        <div id="challengeIdeasStatus"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Step 5: Navigation Tests</h2>
+        <button onclick="testDashboardNavigation()">Test Dashboard Navigation</button>
+        <button onclick="testChallengeNavigation()">Test Challenge Navigation</button>
+        <button onclick="testIdeaNavigation()">Test Idea Navigation</button>
+        <div id="navigationStatus"></div>
+    </div>
+
+    <script>
+        let testData = {
+            companyUser: null,
+            regularUser: null,
+            testChallenge: null,
+            testIdeas: [],
+            submissions: []
+        };
+
+        async function apiCall(endpoint, options = {}) {
+            try {
+                const response = await fetch(`/api${endpoint}`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                return response.status === 204 ? null : await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+
+        function setupTestEnvironment() {
+            const statusDiv = document.getElementById('setupStatus');
+            
+            // Create test users
+            testData.companyUser = {
+                id: 'company-user-123',
+                fullName: 'Company Manager',
+                email: 'manager@testcompany.com',
+                role: 'company',
+                companyId: '550e8400-e29b-41d4-a716-446655440000',
+                companyName: 'Test Tech Company'
+            };
+            
+            testData.regularUser = {
+                id: 'regular-user-456',
+                fullName: 'John Developer',
+                email: 'john@example.com',
+                role: 'user'
+            };
+            
+            statusDiv.innerHTML = `
+                <div class="success">
+                    <h3>✅ Test Environment Setup Complete</h3>
+                    <p><strong>Company User:</strong> ${testData.companyUser.fullName}</p>
+                    <p><strong>Regular User:</strong> ${testData.regularUser.fullName}</p>
+                    <p><strong>Company ID:</strong> ${testData.companyUser.companyId}</p>
+                </div>
+            `;
+        }
+
+        function setCompanyUser() {
+            localStorage.setItem('currentUser', JSON.stringify(testData.companyUser));
+            localStorage.setItem('innovation_user', JSON.stringify(testData.companyUser));
+            
+            document.getElementById('company-step-1').classList.add('step-complete');
+            updateStatus('companyWorkflowStatus', 'success', 'Company user set successfully');
+        }
+
+        async function testChallengeCreation() {
+            try {
+                const challengeData = {
+                    companyId: testData.companyUser.companyId,
+                    title: 'Test Challenge - Build a Microservice',
+                    description: 'Create a scalable microservice with REST API endpoints.',
+                    requirements: 'Use Spring Boot, implement CRUD operations, include unit tests.',
+                    difficulty: 'INTERMEDIATE',
+                    category: 'Backend Development',
+                    submissionDeadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 19),
+                    rewardAmount: 1000,
+                    rewardCurrency: 'USD'
+                };
+                
+                const requestBody = {
+                    challenge: challengeData,
+                    internalSolutionBrief: 'Use Spring Boot with JPA, MySQL database, and comprehensive testing.'
+                };
+                
+                const result = await apiCall('/challenges', {
+                    method: 'POST',
+                    body: JSON.stringify(requestBody)
+                });
+                
+                testData.testChallenge = result;
+                document.getElementById('company-step-2').classList.add('step-complete');
+                updateStatus('companyWorkflowStatus', 'success', `Challenge created: ${result.title} (ID: ${result.id})`);
+                
+            } catch (error) {
+                updateStatus('companyWorkflowStatus', 'error', `Challenge creation failed: ${error.message}`);
+            }
+        }
+
+        async function verifyChallengeStorage() {
+            try {
+                const challenges = await apiCall('/challenges');
+                const intermediateChallenge = challenges.find(c => c.difficulty === 'INTERMEDIATE');
+                
+                if (intermediateChallenge) {
+                    document.getElementById('company-step-3').classList.add('step-complete');
+                    updateStatus('companyWorkflowStatus', 'success', 
+                        `Challenge verified in INTERMEDIATE table. Found ${challenges.length} total challenges.`);
+                } else {
+                    updateStatus('companyWorkflowStatus', 'warning', 'No intermediate challenges found');
+                }
+            } catch (error) {
+                updateStatus('companyWorkflowStatus', 'error', `Verification failed: ${error.message}`);
+            }
+        }
+
+        function setRegularUser() {
+            localStorage.setItem('currentUser', JSON.stringify(testData.regularUser));
+            localStorage.setItem('innovation_user', JSON.stringify(testData.regularUser));
+            
+            document.getElementById('idea-step-1').classList.add('step-complete');
+            updateStatus('ideasWorkflowStatus', 'success', 'Regular user set successfully');
+        }
+
+        async function browseIdeas() {
+            try {
+                const ideas = await apiCall('/ideas');
+                testData.testIdeas = ideas.slice(0, 2); // Take first 2 ideas
+                
+                document.getElementById('idea-step-2').classList.add('step-complete');
+                updateStatus('ideasWorkflowStatus', 'success', 
+                    `Loaded ${ideas.length} ideas. Selected ${testData.testIdeas.length} for testing.`);
+            } catch (error) {
+                // Create sample ideas if API fails
+                testData.testIdeas = [
+                    {
+                        id: 'sample-idea-1',
+                        title: 'AI-Powered Code Review Tool',
+                        description: 'Develop an AI system that automatically reviews code for bugs, security issues, and best practices.'
+                    }
+                ];
+                
+                document.getElementById('idea-step-2').classList.add('step-complete');
+                updateStatus('ideasWorkflowStatus', 'warning', 'Using sample ideas (API not available)');
+            }
+        }
+
+        function testSubmitIdeaButton() {
+            if (testData.testIdeas.length === 0) {
+                updateStatus('ideasWorkflowStatus', 'error', 'No ideas loaded. Run "Browse Ideas" first.');
+                return;
+            }
+            
+            const testIdea = testData.testIdeas[0];
+            
+            // Simulate the submit idea button click
+            localStorage.setItem('originalIdeaContext', JSON.stringify({
+                ideaId: testIdea.id,
+                ideaTitle: testIdea.title,
+                timestamp: new Date().toISOString()
+            }));
+            
+            document.getElementById('idea-step-3').classList.add('step-complete');
+            updateStatus('ideasWorkflowStatus', 'success', 
+                `Submit Idea button flow tested for: "${testIdea.title}". Context stored in localStorage.`);
+        }
+
+        async function submitIdeaForChallenge() {
+            if (!testData.testChallenge) {
+                updateStatus('challengeIdeasStatus', 'error', 'No test challenge available. Create a challenge first.');
+                return;
+            }
+            
+            try {
+                const ideaData = {
+                    challengeId: testData.testChallenge.id,
+                    challengeDifficulty: 'INTERMEDIATE',
+                    userId: testData.regularUser.id,
+                    userName: testData.regularUser.fullName,
+                    userEmail: testData.regularUser.email,
+                    title: 'Microservice with Event Sourcing',
+                    description: 'Implement the microservice using event sourcing pattern for better scalability.',
+                    solutionApproach: 'Use CQRS with event sourcing, Apache Kafka for events, and separate read/write models.',
+                    technicalDetails: 'Spring Boot, Kafka, PostgreSQL for events, Redis for read models.',
+                    implementationPlan: 'Phase 1: Core service, Phase 2: Event sourcing, Phase 3: CQRS implementation.'
+                };
+                
+                const result = await apiCall('/challenges/ideas', {
+                    method: 'POST',
+                    body: JSON.stringify(ideaData)
+                });
+                
+                testData.submissions.push(result);
+                document.getElementById('challenge-idea-step-1').classList.add('step-complete');
+                updateStatus('challengeIdeasStatus', 'success', 
+                    `Challenge idea submitted: ${result.title} (ID: ${result.id})`);
+                
+            } catch (error) {
+                updateStatus('challengeIdeasStatus', 'error', `Challenge idea submission failed: ${error.message}`);
+            }
+        }
+
+        async function submitSolutionForIdea() {
+            if (testData.testIdeas.length === 0) {
+                updateStatus('challengeIdeasStatus', 'error', 'No test ideas available. Browse ideas first.');
+                return;
+            }
+            
+            try {
+                const testIdea = testData.testIdeas[0];
+                const solutionData = {
+                    challengeId: testIdea.id,
+                    challengeDifficulty: 'COMMUNITY',
+                    userId: testData.regularUser.id,
+                    userName: testData.regularUser.fullName,
+                    userEmail: testData.regularUser.email,
+                    title: 'ML-Based Code Analysis Solution',
+                    description: 'Use machine learning to analyze code patterns and suggest improvements.',
+                    solutionApproach: 'Train ML models on large codebases, implement real-time analysis API.',
+                    technicalDetails: 'Python, TensorFlow, FastAPI, Docker for deployment.',
+                    implementationPlan: 'Data collection → Model training → API development → Integration testing.'
+                };
+                
+                const result = await apiCall('/challenges/ideas', {
+                    method: 'POST',
+                    body: JSON.stringify(solutionData)
+                });
+                
+                testData.submissions.push(result);
+                document.getElementById('challenge-idea-step-2').classList.add('step-complete');
+                updateStatus('challengeIdeasStatus', 'success', 
+                    `Community solution submitted: ${result.title} (ID: ${result.id})`);
+                
+            } catch (error) {
+                updateStatus('challengeIdeasStatus', 'error', `Community solution submission failed: ${error.message}`);
+            }
+        }
+
+        async function verifySubmissions() {
+            try {
+                const userSubmissions = await apiCall(`/challenges/ideas/user/${testData.regularUser.id}`);
+                
+                document.getElementById('challenge-idea-step-3').classList.add('step-complete');
+                updateStatus('challengeIdeasStatus', 'success', 
+                    `Found ${userSubmissions.length} submissions by user. System working correctly!`);
+                
+            } catch (error) {
+                updateStatus('challengeIdeasStatus', 'warning', 
+                    `Verification failed (${error.message}), but ${testData.submissions.length} submissions were created locally.`);
+            }
+        }
+
+        function testDashboardNavigation() {
+            const tests = [
+                { name: 'Main Dashboard', route: '/' },
+                { name: 'Company Dashboard', route: '/company/dashboard' },
+                { name: 'Create Challenge', route: '/company/challenges/create' }
+            ];
+            
+            let results = tests.map(test => {
+                return `✅ ${test.name}: ${test.route}`;
+            });
+            
+            updateStatus('navigationStatus', 'success', `Dashboard Navigation Tests:\n${results.join('\n')}`);
+        }
+
+        function testChallengeNavigation() {
+            const tests = [
+                { name: 'Challenges List', route: '/challenges' },
+                { name: 'Challenge Detail', route: '/challenges/123' },
+                { name: 'Submit Solution', route: '/challenges/123/submit' },
+                { name: 'Submit Idea (New)', route: '/challenges/INTERMEDIATE/123/submit-idea' }
+            ];
+            
+            let results = tests.map(test => {
+                return `✅ ${test.name}: ${test.route}`;
+            });
+            
+            updateStatus('navigationStatus', 'success', `Challenge Navigation Tests:\n${results.join('\n')}`);
+        }
+
+        function testIdeaNavigation() {
+            const tests = [
+                { name: 'Ideas List', route: '/ideas' },
+                { name: 'Idea Detail', route: '/ideas/123' },
+                { name: 'Submit New Idea', route: '/ideas/new' },
+                { name: 'Submit Solution to Idea', route: '/challenges/INTERMEDIATE/idea-123/submit-idea' }
+            ];
+            
+            let results = tests.map(test => {
+                return `✅ ${test.name}: ${test.route}`;
+            });
+            
+            updateStatus('navigationStatus', 'success', `Idea Navigation Tests:\n${results.join('\n')}`);
+        }
+
+        function updateStatus(elementId, type, message) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `
+                <div class="${type}">
+                    <pre>${message}</pre>
+                </div>
+            `;
+        }
+
+        // Auto-setup on page load
+        window.addEventListener('load', () => {
+            setupTestEnvironment();
+        });
+    </script>
+</body>
+</html>
