@@ -1,24 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Test Company Dashboard - Challenges Display</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
-        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
-        .success { background-color: #d4edda; border-color: #c3e6cb; }
-        .error { background-color: #f8d7da; border-color: #f5c6cb; }
-        .info { background-color: #d1ecf1; border-color: #bee5eb; }
-        button { padding: 10px 15px; margin: 5px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 3px; }
-        button:hover { background: #0056b3; }
-        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; font-size: 12px; }
-        .challenge-card { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; background: white; }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+
+        .info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+        }
+
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+
+        .challenge-card {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            background: white;
+        }
     </style>
 </head>
+
 <body>
     <h1>🏢 Test Company Dashboard - Challenges Display</h1>
-    
+
     <div class="test-section info">
         <h2>Test Overview</h2>
         <p>This test verifies that challenges appear on the company dashboard after creation.</p>
@@ -66,12 +116,12 @@
                     },
                     ...options
                 });
-                
+
                 if (!response.ok) {
                     const errorText = await response.text();
                     throw new Error(`HTTP ${response.status}: ${errorText}`);
                 }
-                
+
                 return response.status === 204 ? null : await response.json();
             } catch (error) {
                 console.error('API Error:', error);
@@ -88,10 +138,10 @@
                 companyId: '550e8400-e29b-41d4-a716-446655440000',
                 companyName: 'Test Tech Company'
             };
-            
+
             localStorage.setItem('currentUser', JSON.stringify(testData.companyUser));
             localStorage.setItem('innovation_user', JSON.stringify(testData.companyUser));
-            
+
             document.getElementById('setupStatus').innerHTML = `
                 <div class="success">
                     <h3>✅ Company User Setup</h3>
@@ -103,10 +153,10 @@
 
         async function createTestChallenge() {
             const statusDiv = document.getElementById('createStatus');
-            
+
             try {
                 statusDiv.innerHTML = '<p>🚀 Creating test challenge...</p>';
-                
+
                 const challengeData = {
                     companyId: testData.companyUser.companyId,
                     title: 'Dashboard Test Challenge',
@@ -118,7 +168,7 @@
                     rewardAmount: 500,
                     rewardCurrency: 'USD'
                 };
-                
+
                 const result = await apiCall('/challenges', {
                     method: 'POST',
                     body: JSON.stringify({
@@ -126,9 +176,9 @@
                         internalSolutionBrief: 'Internal test solution for dashboard verification.'
                     })
                 });
-                
+
                 testData.createdChallenge = result;
-                
+
                 statusDiv.innerHTML = `
                     <div class="success">
                         <h3>✅ Challenge Created Successfully</h3>
@@ -143,7 +193,7 @@
                         </div>
                     </div>
                 `;
-                
+
             } catch (error) {
                 statusDiv.innerHTML = `
                     <div class="error">
@@ -156,13 +206,13 @@
 
         async function loadCompanyDashboard() {
             const statusDiv = document.getElementById('dashboardStatus');
-            
+
             try {
                 statusDiv.innerHTML = '<p>🔍 Loading company dashboard challenges...</p>';
-                
+
                 const challenges = await apiCall(`/challenges/company/${testData.companyUser.companyId}`);
                 testData.dashboardChallenges = challenges;
-                
+
                 statusDiv.innerHTML = `
                     <div class="success">
                         <h3>✅ Dashboard Challenges Loaded</h3>
@@ -187,7 +237,7 @@
                         `}
                     </div>
                 `;
-                
+
             } catch (error) {
                 statusDiv.innerHTML = `
                     <div class="error">
@@ -200,7 +250,7 @@
 
         async function verifyChallenge() {
             const statusDiv = document.getElementById('verifyStatus');
-            
+
             if (!testData.createdChallenge) {
                 statusDiv.innerHTML = `
                     <div class="error">
@@ -210,7 +260,7 @@
                 `;
                 return;
             }
-            
+
             if (testData.dashboardChallenges.length === 0) {
                 statusDiv.innerHTML = `
                     <div class="error">
@@ -220,12 +270,12 @@
                 `;
                 return;
             }
-            
+
             // Check if created challenge is in dashboard challenges
             const foundChallenge = testData.dashboardChallenges.find(
                 c => c.id === testData.createdChallenge.id
             );
-            
+
             if (foundChallenge) {
                 statusDiv.innerHTML = `
                     <div class="success">
@@ -266,4 +316,5 @@
         });
     </script>
 </body>
+
 </html>
