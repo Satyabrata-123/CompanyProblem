@@ -17,3 +17,9 @@ management:
   endpoint:
     health:
       show-details: always
+
+# AI Configuration
+ai:
+  gemini:
+    api-key: ${GEMINI_API_KEY:AIzaSyALTcRkbOuznyc9hkqV-i6Om11o460yOfY}
+    base-url: https://generativelanguage.googleapis.com/v1beta

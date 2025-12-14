@@ -2,7 +2,7 @@ import { Layout } from '../../components/layout/layout.js'
 
 export default function SubmitIdeaPage() {
   const currentUser = window.app.state.getState('user').currentUser
-  
+
   if (!currentUser) {
     window.app.router.navigate('/login')
     return ''
@@ -251,7 +251,7 @@ function initializeSubmitIdeaForm() {
   const titleCount = document.getElementById('titleCount')
   const descriptionCount = document.getElementById('descriptionCount')
   const nextStepBtn = document.getElementById('nextStepBtn')
-  
+
   let currentStep = 1
   let aiAnalysisData = null
   let duplicateCheckResults = null
@@ -322,9 +322,9 @@ function initializeSubmitIdeaForm() {
       description: descriptionInput.value,
       timestamp: new Date().toISOString()
     }
-    
+
     localStorage.setItem('idea_draft', JSON.stringify(draft))
-    
+
     window.app.state.addNotification({
       type: 'success',
       message: 'Draft saved successfully!',
@@ -339,13 +339,13 @@ function initializeSubmitIdeaForm() {
         const draftData = JSON.parse(draft)
         titleInput.value = draftData.title || ''
         descriptionInput.value = draftData.description || ''
-        
+
         // Update character counts
         titleCount.textContent = titleInput.value.length
         descriptionCount.textContent = descriptionInput.value.length
-        
+
         updateNextStepButton()
-        
+
         window.app.state.addNotification({
           type: 'success',
           message: 'Draft loaded successfully!',
@@ -376,7 +376,7 @@ function initializeSubmitIdeaForm() {
       hideFieldError('title')
       hideFieldError('description')
       updateNextStepButton()
-      
+
       // Clear draft
       localStorage.removeItem('idea_draft')
     }
@@ -385,10 +385,10 @@ function initializeSubmitIdeaForm() {
   // Form submission with duplicate prevention
   let isSubmitting = false
   let lastSubmitTime = 0
-  
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault()
-    
+
     // Debounce rapid submissions (prevent submissions within 1 second)
     const now = Date.now()
     if (now - lastSubmitTime < 1000) {
@@ -396,13 +396,13 @@ function initializeSubmitIdeaForm() {
       return
     }
     lastSubmitTime = now
-    
+
     // Prevent duplicate submissions
     if (isSubmitting) {
       console.log('⚠️ Submission already in progress, ignoring duplicate')
       return
     }
-    
+
     isSubmitting = true
     try {
       await submitIdea()
@@ -428,7 +428,7 @@ function initializeSubmitIdeaForm() {
           isValid = false
         }
         break
-        
+
       case 'description':
         if (!value.trim()) {
           errorMessage = 'Description is required'
@@ -461,7 +461,7 @@ function initializeSubmitIdeaForm() {
   function updateNextStepButton() {
     const isValid = titleInput.value.trim().length >= 5 && descriptionInput.value.trim().length >= 20
     nextStepBtn.disabled = !isValid
-    
+
     if (isValid) {
       nextStepBtn.classList.remove('opacity-50', 'cursor-not-allowed')
     } else {
@@ -483,7 +483,7 @@ function initializeSubmitIdeaForm() {
   async function performAIAnalysis() {
     const aiAnalysisContainer = document.getElementById('aiAnalysis')
     const finalStepBtn = document.getElementById('finalStepBtn')
-    
+
     try {
       // Show loading state
       aiAnalysisContainer.innerHTML = `
@@ -566,7 +566,7 @@ function initializeSubmitIdeaForm() {
           <p class="text-sm text-red-700">AI analysis is temporarily unavailable, but you can still submit your idea.</p>
         </div>
       `
-      
+
       finalStepBtn.disabled = false
       finalStepBtn.classList.remove('opacity-50', 'cursor-not-allowed')
     }
@@ -574,7 +574,7 @@ function initializeSubmitIdeaForm() {
 
   function generatePreview() {
     const previewContainer = document.getElementById('ideaPreview')
-    
+
     previewContainer.innerHTML = `
       <div class="space-y-4">
         <div>
@@ -603,25 +603,25 @@ function initializeSubmitIdeaForm() {
     const submitBtn = document.getElementById('submitBtn')
     const submitBtnText = document.getElementById('submitBtnText')
     const submitSpinner = document.getElementById('submitSpinner')
-    
+
     // Generate unique submission token
     const currentToken = Date.now() + '-' + Math.random()
-    
+
     // Prevent multiple submissions
     if (submitBtn.disabled || submissionToken) {
       console.log('⚠️ Submit already in progress, preventing duplicate submission')
       return
     }
-    
+
     // Set submission token
     submissionToken = currentToken
-    
+
     // Set loading state
     submitBtn.disabled = true
     submitBtn.classList.add('opacity-50', 'cursor-not-allowed')
     submitBtnText.textContent = 'Submitting...'
     submitSpinner.classList.remove('hidden')
-    
+
     console.log('🚀 Starting idea submission with token:', currentToken)
     if (currentStep !== 3) {
       console.error('❌ Cannot submit idea - not in final step')
@@ -638,13 +638,13 @@ function initializeSubmitIdeaForm() {
         console.log('⚠️ Submission token changed, aborting this submission')
         return
       }
-      
+
       const currentUser = window.app.state.getState('user').currentUser
-      
+
       if (!currentUser || !currentUser.id) {
         throw new Error('User not logged in')
       }
-      
+
       const ideaData = {
         title: titleInput.value.trim(),
         description: descriptionInput.value.trim(),
@@ -653,18 +653,18 @@ function initializeSubmitIdeaForm() {
         tags: Array.isArray(aiAnalysisData?.tags) ? aiAnalysisData.tags : ['innovation'],
         aiScore: aiAnalysisData?.score || null
       }
-      
+
       console.log('📤 Submitting idea data:', ideaData)
-      
+
       // Add timeout to prevent hanging
       const createIdeaPromise = window.app.api.createIdea(ideaData)
-      const timeoutPromise = new Promise((_, reject) => 
+      const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Submission timeout after 30 seconds')), 30000)
       )
-      
+
       const newIdea = await Promise.race([createIdeaPromise, timeoutPromise])
       console.log('✅ Idea created successfully:', newIdea)
-      
+
       // Award points for idea submission (don't fail if this fails)
       try {
         await window.app.api.awardPointsForIdeaSubmission(currentUser.id)
@@ -672,37 +672,31 @@ function initializeSubmitIdeaForm() {
       } catch (pointsError) {
         console.warn('⚠️ Failed to award points:', pointsError.message)
       }
-      
+
       // Clear draft
       localStorage.removeItem('idea_draft')
-      
-      window.app.state.addNotification({
-        type: 'success',
-        message: 'Idea submitted successfully! You earned 10 points.',
-        duration: 5000
-      })
-      
-      // Clear submission token before redirect
+
+      // Clear submission token
       submissionToken = null
-      
-      // Redirect to the new idea
-      window.app.router.navigate(`/ideas/${newIdea.id}`)
-      
+
+      // Show success message with AI analysis results
+      showSuccessWithAIResults(newIdea, aiAnalysisData)
+
     } catch (error) {
       console.error('Failed to submit idea:', error)
-      
+
       window.app.state.addNotification({
         type: 'error',
         message: 'Failed to submit idea. Please try again.',
         duration: 5000
       })
-      
+
       // Reset button state
       submitBtn.disabled = false
       submitBtn.classList.remove('opacity-50', 'cursor-not-allowed')
       submitBtnText.textContent = '🚀 Submit Idea'
       submitSpinner.classList.add('hidden')
-      
+
       // Clear submission token
       submissionToken = null
     }
@@ -714,14 +708,14 @@ function initializeSubmitIdeaForm() {
       description: descriptionInput.value,
       timestamp: new Date().toISOString()
     }
-    
+
     localStorage.setItem('idea_draft', JSON.stringify(draft))
   }
 
   function showFieldError(fieldName, message) {
     const errorElement = document.getElementById(`${fieldName}Error`)
     const inputElement = document.getElementById(fieldName)
-    
+
     if (errorElement && inputElement) {
       errorElement.textContent = message
       errorElement.classList.remove('hidden')
@@ -733,7 +727,7 @@ function initializeSubmitIdeaForm() {
   function hideFieldError(fieldName) {
     const errorElement = document.getElementById(`${fieldName}Error`)
     const inputElement = document.getElementById(fieldName)
-    
+
     if (errorElement && inputElement) {
       errorElement.textContent = ''
       errorElement.classList.add('hidden')
@@ -742,13 +736,244 @@ function initializeSubmitIdeaForm() {
     }
   }
 
+  function showSuccessWithAIResults(idea, aiData) {
+    const container = document.querySelector('.max-w-4xl')
+
+    // Determine score class and color
+    let scoreClass = 'poor'
+    let scoreColor = '#dc3545'
+    if (aiData && aiData.score >= 90) {
+      scoreClass = 'excellent'
+      scoreColor = '#28a745'
+    } else if (aiData && aiData.score >= 70) {
+      scoreClass = 'good'
+      scoreColor = '#17a2b8'
+    } else if (aiData && aiData.score >= 40) {
+      scoreClass = 'partial'
+      scoreColor = '#ffc107'
+    }
+
+    container.innerHTML = `
+      <div class="success-container">
+        <style>
+          .success-container {
+            padding: 40px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+          }
+          .success-header {
+            text-align: center;
+            margin-bottom: 40px;
+          }
+          .success-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+          }
+          .success-header h2 {
+            color: #28a745;
+            font-size: 32px;
+            margin-bottom: 10px;
+          }
+          .ai-results-section {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 12px;
+            margin: 30px 0;
+          }
+          .ai-score-display {
+            text-align: center;
+            margin: 30px 0;
+          }
+          .score-circle {
+            width: 150px;
+            height: 150px;
+            border: 8px solid;
+            border-radius: 50%;
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+          }
+          .score-number {
+            font-size: 48px;
+            font-weight: bold;
+          }
+          .score-label {
+            font-size: 18px;
+            color: #666;
+          }
+          .ai-category {
+            text-align: center;
+            margin: 20px 0;
+          }
+          .category-badge {
+            display: inline-block;
+            padding: 8px 20px;
+            background: #667eea;
+            color: white;
+            border-radius: 20px;
+            font-size: 18px;
+            font-weight: 600;
+          }
+          .ai-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+          }
+          .tag-badge {
+            padding: 6px 16px;
+            background: #e0e7ff;
+            color: #4c51bf;
+            border-radius: 16px;
+            font-size: 14px;
+          }
+          .idea-summary {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+          }
+          .idea-summary h3 {
+            margin-top: 0;
+            color: #333;
+          }
+          .next-steps {
+            background: #d4edda;
+            padding: 25px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #28a745;
+          }
+          .next-steps h3 {
+            margin-top: 0;
+            color: #155724;
+          }
+          .next-steps ul {
+            margin: 15px 0;
+            padding-left: 20px;
+          }
+          .next-steps li {
+            margin: 10px 0;
+            color: #155724;
+          }
+          .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+          }
+          .btn-primary-custom {
+            padding: 12px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+          }
+          .btn-primary-custom:hover {
+            background: #5568d3;
+            transform: translateY(-1px);
+          }
+          .btn-secondary-custom {
+            padding: 12px 30px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+          }
+          .btn-secondary-custom:hover {
+            background: #545b62;
+            transform: translateY(-1px);
+          }
+        </style>
+        
+        <div class="success-header">
+          <div class="success-icon">🎉</div>
+          <h2>Idea Submitted Successfully!</h2>
+          <p style="color: #666; font-size: 18px;">Your idea has been analyzed by AI and submitted to the community</p>
+        </div>
+        
+        ${aiData ? `
+          <div class="ai-results-section">
+            <h3 style="text-align: center; color: #333; margin-bottom: 30px;">🤖 AI Analysis Results</h3>
+            
+            <div class="ai-score-display">
+              <div class="score-circle" style="border-color: ${scoreColor}">
+                <span class="score-number" style="color: ${scoreColor}">${Math.round(aiData.score || 0)}</span>
+                <span class="score-label">/100</span>
+              </div>
+              <div style="font-size: 24px; font-weight: 600; color: ${scoreColor}; text-transform: uppercase;">
+                ${scoreClass} QUALITY
+              </div>
+            </div>
+            
+            <div class="ai-category">
+              <p style="color: #666; margin-bottom: 10px;">Category</p>
+              <span class="category-badge">${aiData.category || 'General'}</span>
+            </div>
+            
+            ${aiData.tags && aiData.tags.length > 0 ? `
+              <div class="ai-tags">
+                ${aiData.tags.map(tag => `<span class="tag-badge">${tag}</span>`).join('')}
+              </div>
+            ` : ''}
+          </div>
+        ` : ''}
+        
+        <div class="idea-summary">
+          <h3>Your Submission:</h3>
+          <p><strong>Title:</strong> ${idea.title}</p>
+          <p><strong>Category:</strong> ${aiData?.category || 'General'}</p>
+          <p><strong>AI Quality Score:</strong> ${aiData ? Math.round(aiData.score) + '/100' : 'N/A'}</p>
+          <p><strong>Status:</strong> Submitted</p>
+          <p><strong>Submitted:</strong> ${new Date().toLocaleString()}</p>
+        </div>
+        
+        <div class="next-steps">
+          <h3>What's Next:</h3>
+          <ul>
+            <li>✅ Your idea is now visible to the community</li>
+            <li>⭐ You earned 10 points for submitting</li>
+            <li>👥 Other users can vote and comment on your idea</li>
+            <li>📧 You'll receive notifications about updates</li>
+            <li>🏆 High-quality ideas may be implemented by the company</li>
+          </ul>
+        </div>
+        
+        <div class="action-buttons">
+          <button class="btn-primary-custom" onclick="window.app.router.navigate('/ideas/${idea.id}')">
+            View Your Idea
+          </button>
+          <button class="btn-secondary-custom" onclick="window.app.router.navigate('/ideas')">
+            Browse All Ideas
+          </button>
+          <button class="btn-secondary-custom" onclick="window.app.router.navigate('/dashboard')">
+            Go to Dashboard
+          </button>
+        </div>
+      </div>
+    `
+  }
+
   // Load draft on page load if available
   const existingDraft = localStorage.getItem('idea_draft')
   if (existingDraft) {
     try {
       const draftData = JSON.parse(existingDraft)
       const draftAge = Date.now() - new Date(draftData.timestamp).getTime()
-      
+
       // Only load draft if it's less than 24 hours old
       if (draftAge < 24 * 60 * 60 * 1000) {
         setTimeout(() => {

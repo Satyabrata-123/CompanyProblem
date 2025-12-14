@@ -63,7 +63,9 @@ class App {
   setupRouter() {
     // Define routes
     const routes = {
-      '/': () => import('./pages/dashboard/dashboard.js'),
+      '/': () => import('./pages/landing/landing-page.js'),
+      '/3d-guide': () => import('./pages/guide/3d-platform-guide.js'),
+      '/dashboard': () => import('./pages/dashboard/dashboard.js'),
       '/login': () => import('./pages/auth/login.js'),
       '/register': () => import('./pages/auth/register.js'),
       '/ideas': () => import('./pages/ideas/ideas-list.js'),
@@ -88,12 +90,12 @@ class App {
     // Set up authentication guard
     window.app.router.beforeEach((to, from, next) => {
       const isAuthenticated = window.app.state.getState('user').isAuthenticated
-      const publicRoutes = ['/login', '/register']
+      const publicRoutes = ['/', '/login', '/register']
 
       if (!isAuthenticated && !publicRoutes.includes(to)) {
         next('/login')
-      } else if (isAuthenticated && publicRoutes.includes(to)) {
-        next('/')
+      } else if (isAuthenticated && to === '/') {
+        next('/dashboard')
       } else {
         next()
       }

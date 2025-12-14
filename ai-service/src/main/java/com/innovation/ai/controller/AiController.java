@@ -43,6 +43,26 @@ public class AiController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/calculate-credits")
+    public ResponseEntity<Map<String, Object>> calculateCredits(
+            @RequestParam Double matchScore,
+            @RequestParam(required = false, defaultValue = "INTERMEDIATE") String difficulty) {
+        
+        Integer credits = aiService.calculateCreditsForSolution(matchScore, difficulty);
+        boolean qualifies = aiService.qualifiesForReward(matchScore);
+        String tier = aiService.getRewardTier(matchScore);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("matchScore", matchScore);
+        response.put("difficulty", difficulty);
+        response.put("credits", credits);
+        response.put("qualifiesForReward", qualifies);
+        response.put("rewardTier", tier);
+        response.put("timestamp", System.currentTimeMillis());
+        
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/health")
     public ResponseEntity<Map<String, Object>> healthCheck() {
         Map<String, Object> health = new HashMap<>();

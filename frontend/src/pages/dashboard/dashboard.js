@@ -70,6 +70,15 @@ export default async function DashboardPage() {
           <p class="mt-2 text-gray-600">
             Here's what's happening in the innovation community
           </p>
+          
+          <!-- 3D Guide Button -->
+          <div class="mt-4">
+            <button id="open3DGuide" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full text-white bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl">
+              <span class="mr-2">🌟</span>
+              Interactive 3D Platform Guide
+              <span class="ml-2">🚀</span>
+            </button>
+          </div>
         </div>
         
         <!-- Stats Grid -->
@@ -316,6 +325,14 @@ export default async function DashboardPage() {
 }
 
 function initializeDashboard(dashboardStats, recentIdeas, topIdeas, recentChallenges) {
+  // Setup 3D Guide button
+  const guideButton = document.getElementById('open3DGuide')
+  if (guideButton) {
+    guideButton.addEventListener('click', () => {
+      window.app.router.navigate('/3d-guide')
+    })
+  }
+
   // Refresh stats periodically
   setInterval(async () => {
     try {

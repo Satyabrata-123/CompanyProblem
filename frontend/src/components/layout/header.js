@@ -13,7 +13,7 @@ export function Header() {
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
           <!-- Logo and Brand -->
-          <div class="flex items-center">
+          <div class="flex items-center space-x-4">
             <div class="flex-shrink-0">
               <a href="#/" class="flex items-center">
                 <div class="h-8 w-8 bg-primary-600 rounded-lg flex items-center justify-center mr-3">
@@ -23,6 +23,13 @@ export function Header() {
                 <span class="text-xl font-semibold text-gray-900 sm:hidden">IP</span>
               </a>
             </div>
+            
+            <!-- Home Button -->
+            ${isAuthenticated ? `
+              <a href="#/" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-primary-700 bg-primary-100 hover:bg-primary-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200">
+                🏠 Home
+              </a>
+            ` : ''}
           </div>
 
           <!-- Search Bar (Desktop) -->

@@ -5,3 +5,5 @@ D:\COMPANY_PROBLEM\ai-service\src\main\java\com\innovation\ai\dto\CategorizeResp
 D:\COMPANY_PROBLEM\ai-service\src\main\java\com\innovation\ai\service\AiService.java
 D:\COMPANY_PROBLEM\ai-service\src\main\java\com\innovation\ai\EnableEurekaClient.java
 D:\COMPANY_PROBLEM\ai-service\src\main\java\com\innovation\ai\AiServiceApplication.java
+D:\COMPANY_PROBLEM\ai-service\src\main\java\com\innovation\ai\dto\CompareIdeaWithSolutionRequest.java
+D:\COMPANY_PROBLEM\ai-service\src\main\java\com\innovation\ai\dto\CompareIdeaWithSolutionResponse.java

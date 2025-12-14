@@ -25,30 +25,81 @@ export class ChallengeDetailPage {
 
     async loadChallenge() {
         try {
-            const response = await window.app.api.get(`/challenges/${this.challengeId}`);
-            this.challenge = response.data;
+            // Try to load from all difficulty levels
+            let challenge = null;
+            let difficulty = null;
+
+            // Try BEGINNER first
+            try {
+                const response = await window.app.api.get(`/company/challenges/BEGINNER/${this.challengeId}`);
+                challenge = response;
+                difficulty = 'BEGINNER';
+            } catch (e) {
+                // Try INTERMEDIATE
+                try {
+                    const response = await window.app.api.get(`/company/challenges/INTERMEDIATE/${this.challengeId}`);
+                    challenge = response;
+                    difficulty = 'INTERMEDIATE';
+                } catch (e2) {
+                    // Try EXPERT
+                    const response = await window.app.api.get(`/company/challenges/EXPERT/${this.challengeId}`);
+                    challenge = response;
+                    difficulty = 'EXPERT';
+                }
+            }
+
+            this.challenge = challenge;
+            this.challenge.difficulty = difficulty;
             this.renderChallenge();
         } catch (error) {
             console.error('Error loading challenge:', error);
-            document.getElementById('challengeContent').innerHTML = 
-                '<div class="error">Failed to load challenge details</div>';
+
+            // If challenge not found, show demo mode
+            if (error.message.includes('Not Found')) {
+                console.log('Challenge not found, showing demo mode...');
+                this.showDemoMode();
+                return;
+            }
+
+            document.getElementById('challengeContent').innerHTML = `
+                <div class="error-container">
+                    <div class="error-icon">⚠️</div>
+                    <h2>Challenge Not Found</h2>
+                    <p>The challenge you're looking for doesn't exist or may have been removed.</p>
+                    <div class="error-actions">
+                        <button class="btn-primary" onclick="window.app.router.navigate('/challenges')">
+                            🔍 Browse All Challenges
+                        </button>
+                        <button class="btn-secondary" onclick="window.app.router.navigate('/dashboard')">
+                            📊 Back to Dashboard
+                        </button>
+                    </div>
+                </div>
+            `;
         }
     }
 
     async loadSolutions() {
+        // Don't try to load solutions if challenge doesn't exist
+        if (!this.challenge) {
+            console.log('No challenge loaded, skipping solutions');
+            return;
+        }
+
         try {
             const response = await window.app.api.get(`/solutions/challenge/${this.challengeId}`);
-            this.solutions = response.data;
-            
+            this.solutions = response.data || [];
+
             // Check if current user has submitted a solution
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-            if (currentUser) {
+            if (currentUser && this.solutions && Array.isArray(this.solutions)) {
                 this.userSolution = this.solutions.find(s => s.submittedBy === currentUser.id);
             }
-            
+
             this.renderSolutions();
         } catch (error) {
             console.error('Error loading solutions:', error);
+            this.solutions = [];
         }
     }
 
@@ -56,7 +107,7 @@ export class ChallengeDetailPage {
         const content = document.getElementById('challengeContent');
         const isDeadlinePassed = new Date(this.challenge.submissionDeadline) < new Date();
         const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-        
+
         content.innerHTML = `
             <div class="challenge-header">
                 <button class="back-btn" onclick="window.app.router.navigate('/challenges')">
@@ -172,7 +223,7 @@ export class ChallengeDetailPage {
 
     renderSolutions() {
         const solutionsList = document.getElementById('solutionsList');
-        
+
         if (this.solutions.length === 0) {
             solutionsList.innerHTML = '<div class="no-solutions">No solutions submitted yet</div>';
             return;
@@ -243,6 +294,55 @@ export class ChallengeDetailPage {
         if (text.length <= maxLength) return text;
         return text.substring(0, maxLength) + '...';
     }
+
+    showDemoMode() {
+        // Create a demo challenge for testing
+        this.challenge = {
+            id: this.challengeId,
+            title: "Demo: Improve Customer Support Response Time",
+            description: "This is a demo challenge to test the AI-powered idea comparison system. Find innovative ways to reduce customer support response time and improve customer satisfaction. Current average response time is 24 hours.",
+            rewardAmount: 250.00,
+            difficulty: "BEGINNER",
+            company: {
+                name: "Demo Company",
+                id: "demo-company-id"
+            },
+            isActive: true,
+            submissionsCount: 0,
+            deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+            requirements: [
+                "Solution must be technically feasible",
+                "Should reduce response time by at least 50%",
+                "Must maintain or improve customer satisfaction",
+                "Consider scalability and cost-effectiveness"
+            ],
+            evaluationCriteria: [
+                "Innovation and creativity (30%)",
+                "Technical feasibility (25%)",
+                "Impact on customer satisfaction (25%)",
+                "Implementation complexity (20%)"
+            ]
+        };
+
+        this.renderChallenge();
+
+        // Show demo notice
+        const challengeContent = document.getElementById('challengeContent');
+        const demoNotice = document.createElement('div');
+        demoNotice.style.cssText = `
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #856404;
+        `;
+        demoNotice.innerHTML = `
+            <strong>🧪 Demo Mode:</strong> This is a demonstration challenge. 
+            The AI comparison system is fully functional - submit your idea to test it!
+        `;
+        challengeContent.insertBefore(demoNotice, challengeContent.firstChild);
+    }
 }
 
 // CSS for challenge detail
@@ -251,6 +351,76 @@ const challengeDetailCSS = `
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
+}
+
+.error-container {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: #f8f9fa;
+    border-radius: 12px;
+    margin: 2rem 0;
+    border: 1px solid #e9ecef;
+}
+
+.error-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.error-container h2 {
+    color: #dc3545;
+    margin-bottom: 1rem;
+    font-size: 2rem;
+}
+
+.error-container p {
+    color: #6c757d;
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.error-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.error-actions .btn-primary,
+.error-actions .btn-secondary {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 25px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.error-actions .btn-primary {
+    background: linear-gradient(45deg, #007bff, #0056b3);
+    color: white;
+}
+
+.error-actions .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+.error-actions .btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.error-actions .btn-secondary:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
 }
 
 .back-btn {

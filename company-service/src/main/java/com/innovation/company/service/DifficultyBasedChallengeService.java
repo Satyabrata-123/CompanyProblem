@@ -280,6 +280,21 @@ public class DifficultyBasedChallengeService {
                 .stream().map(this::convertIdeaToDTO).toList();
     }
 
+    public String getChallengeSolution(UUID challengeId, String difficulty) {
+        return switch (difficulty.toUpperCase()) {
+            case "BEGINNER" -> beginnerRepository.findById(challengeId)
+                    .map(BeginnerChallenge::getInternalSolutionBrief)
+                    .orElseThrow(() -> new RuntimeException("Challenge not found"));
+            case "INTERMEDIATE" -> intermediateRepository.findById(challengeId)
+                    .map(IntermediateChallenge::getInternalSolutionBrief)
+                    .orElseThrow(() -> new RuntimeException("Challenge not found"));
+            case "EXPERT" -> expertRepository.findById(challengeId)
+                    .map(ExpertChallenge::getInternalSolutionBrief)
+                    .orElseThrow(() -> new RuntimeException("Challenge not found"));
+            default -> throw new RuntimeException("Invalid difficulty level");
+        };
+    }
+
     private void incrementChallengeSubmissions(UUID challengeId, String difficulty) {
         try {
             switch (difficulty.toUpperCase()) {

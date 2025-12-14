@@ -269,19 +269,71 @@ export class SubmitIdeaPage {
 
             console.log('Submitting idea:', ideaData);
 
+            // Step 1: Submit the idea
             const response = await window.app.api.post('/challenges/ideas', ideaData);
+            console.log('✅ Idea submitted:', response);
 
-            this.showSuccessMessage(response);
+            // Step 2: If this is a challenge submission (not community), compare with company solution
+            let comparisonResult = null;
+            let creditsAwarded = 0;
 
-            setTimeout(() => {
-                if (this.isIdeaBasedSubmission) {
-                    // Clear the context and go back to ideas
-                    localStorage.removeItem('originalIdeaContext');
-                    window.app.router.navigate('/ideas');
-                } else {
-                    window.app.router.navigate(`/challenges/${this.challengeId}`);
+            if (!this.isIdeaBasedSubmission && this.challenge) {
+                try {
+                    console.log('🤖 Fetching company solution for comparison...');
+                    
+                    // Fetch the company's solution (internal use only)
+                    const solutionResponse = await window.app.api.get(
+                        `/challenges/${this.difficulty}/${this.challengeId}/solution`
+                    );
+                    
+                    if (solutionResponse && solutionResponse.solution) {
+                        console.log('✅ Company solution retrieved');
+                        
+                        // Compare user's idea with company solution
+                        const comparisonRequest = {
+                            ideaId: response.id,
+                            ideaTitle: ideaData.title,
+                            ideaDescription: ideaData.description + '\n\nSolution Approach: ' + ideaData.solutionApproach,
+                            challengeId: this.challengeId,
+                            challengeTitle: this.challenge.title,
+                            challengeDescription: this.challenge.description,
+                            companySolution: solutionResponse.solution
+                        };
+
+                        comparisonResult = await window.app.api.compareIdeaWithSolution(comparisonRequest);
+                        console.log('✅ AI Comparison complete:', comparisonResult);
+
+                        // Step 3: Calculate credits based on match score
+                        if (comparisonResult.matchScore >= 40) {
+                            const creditsResponse = await fetch(
+                                `/api/ai/calculate-credits?matchScore=${comparisonResult.matchScore}&difficulty=${this.difficulty}`
+                            );
+                            const creditsData = await creditsResponse.json();
+                            creditsAwarded = creditsData.credits;
+                            
+                            console.log('💰 Credits calculated:', creditsData);
+
+                            // Award credits to user (you can integrate with gamification service here)
+                            if (creditsAwarded > 0) {
+                                try {
+                                    // TODO: Call gamification service to award credits
+                                    console.log(`💰 Awarding ${creditsAwarded} credits to user ${user.id}`);
+                                } catch (e) {
+                                    console.warn('Failed to award credits:', e);
+                                }
+                            }
+                        }
+                    } else {
+                        console.warn('⚠️ No solution available for this challenge');
+                    }
+                } catch (error) {
+                    console.error('❌ AI comparison failed:', error);
+                    // Don't fail the submission if comparison fails
                 }
-            }, 3000);
+            }
+
+            // Show success message with comparison results
+            this.showSuccessMessage(response, comparisonResult, creditsAwarded);
 
         } catch (error) {
             console.error('Error submitting idea:', error);
@@ -293,21 +345,81 @@ export class SubmitIdeaPage {
         }
     }
 
-    showSuccessMessage(idea) {
+    showSuccessMessage(idea, comparisonResult = null, creditsAwarded = 0) {
         const container = document.querySelector('.submit-idea-container');
         const isIdeaBasedSubmission = this.isIdeaBasedSubmission;
+
+        // Determine score color
+        let scoreColor = '#dc3545';
+        if (comparisonResult) {
+            if (comparisonResult.matchScore >= 90) scoreColor = '#28a745';
+            else if (comparisonResult.matchScore >= 70) scoreColor = '#17a2b8';
+            else if (comparisonResult.matchScore >= 40) scoreColor = '#ffc107';
+        }
 
         container.innerHTML = `
             <div class="success-message">
                 <div class="success-icon">🎉</div>
                 <h2>${isIdeaBasedSubmission ? 'Solution Submitted Successfully!' : 'Idea Submitted Successfully!'}</h2>
-                <p>Your ${isIdeaBasedSubmission ? 'solution' : 'solution idea'} has been submitted for review.</p>
+                <p>Your ${isIdeaBasedSubmission ? 'solution' : 'solution idea'} has been submitted and analyzed by AI.</p>
+                
+                ${comparisonResult ? `
+                    <div class="ai-comparison-results">
+                        <h3>🤖 AI Analysis Results</h3>
+                        
+                        <div class="match-score-display">
+                            <div class="score-circle" style="border-color: ${scoreColor}">
+                                <span class="score-number" style="color: ${scoreColor}">${Math.round(comparisonResult.matchScore)}</span>
+                                <span class="score-label">/100</span>
+                            </div>
+                            <div class="match-level" style="color: ${scoreColor}">
+                                ${comparisonResult.matchLevel}
+                            </div>
+                        </div>
+
+                        <div class="comparison-feedback">
+                            <div class="feedback-box ${comparisonResult.isCorrectSolution ? 'success-box' : 'warning-box'}">
+                                <h4>${comparisonResult.isCorrectSolution ? '✅ Correct Solution!' : '💡 Partial Match'}</h4>
+                                <p>${comparisonResult.feedback}</p>
+                            </div>
+
+                            <div class="feedback-details">
+                                <div class="strengths-box">
+                                    <h4>✅ Strengths</h4>
+                                    <p>${comparisonResult.strengths}</p>
+                                </div>
+                                <div class="improvements-box">
+                                    <h4>🔧 Areas for Improvement</h4>
+                                    <p>${comparisonResult.improvements}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        ${creditsAwarded > 0 ? `
+                            <div class="credits-awarded">
+                                <h3>💰 Credits Awarded</h3>
+                                <div class="credits-amount">${creditsAwarded} Credits</div>
+                                <p>Based on your ${comparisonResult.matchLevel} match with the company solution!</p>
+                            </div>
+                        ` : comparisonResult.matchScore >= 40 ? `
+                            <div class="credits-info">
+                                <p>⚠️ Your score qualifies for ${Math.round(comparisonResult.matchScore * 0.25)} credits, but credit awarding is pending.</p>
+                            </div>
+                        ` : `
+                            <div class="no-credits">
+                                <p>💡 Score below 40 doesn't qualify for credits. Keep improving!</p>
+                            </div>
+                        `}
+                    </div>
+                ` : ''}
                 
                 <div class="idea-summary">
                     <h3>Your Submission:</h3>
                     <p><strong>Title:</strong> ${idea.title}</p>
-                    <p><strong>Status:</strong> ${idea.status}</p>
-                    <p><strong>Submitted:</strong> ${new Date(idea.createdAt).toLocaleString()}</p>
+                    <p><strong>Status:</strong> ${idea.status || 'SUBMITTED'}</p>
+                    ${comparisonResult ? `<p><strong>Match Score:</strong> ${Math.round(comparisonResult.matchScore)}/100</p>` : ''}
+                    ${creditsAwarded > 0 ? `<p><strong>Credits Earned:</strong> ${creditsAwarded}</p>` : ''}
+                    <p><strong>Submitted:</strong> ${new Date().toLocaleString()}</p>
                 </div>
 
                 <div class="next-steps">
@@ -319,17 +431,31 @@ export class SubmitIdeaPage {
                             <li>⭐ Other users can vote on your solution</li>
                             <li>🏆 Your solution may help others with similar problems</li>
                         ` : `
-                            <li>✅ Your idea is now visible to the company</li>
+                            <li>✅ Your idea has been evaluated by AI</li>
+                            ${comparisonResult && comparisonResult.isCorrectSolution ? 
+                                '<li>🎉 Your solution matches the company\'s approach!</li>' : 
+                                '<li>💡 Review the feedback to improve your approach</li>'}
+                            ${creditsAwarded > 0 ? `<li>💰 ${creditsAwarded} credits have been added to your account</li>` : ''}
                             <li>📧 You'll receive notifications about status updates</li>
                             <li>⭐ Other users can vote on your idea</li>
-                            <li>🏆 The company will evaluate and potentially select winners</li>
                         `}
                     </ul>
                 </div>
                 
-                <p class="redirect-notice">Redirecting to ${isIdeaBasedSubmission ? 'ideas page' : 'challenge page'}...</p>
+                <div class="action-buttons">
+                    <button class="btn-dashboard" onclick="window.location.href='http://localhost:3000/#/company/dashboard'">
+                        🏢 Go to Dashboard Now
+                    </button>
+                </div>
+                
+                <p class="redirect-notice">Redirecting to company dashboard in 5 seconds...</p>
             </div>
         `;
+
+        // Redirect after 5 seconds
+        setTimeout(() => {
+            window.location.href = 'http://localhost:3000/#/company/dashboard';
+        }, 5000);
     }
 
     showError(message) {
@@ -564,6 +690,118 @@ const submitIdeaCSS = `
     padding: 60px 40px;
 }
 
+.ai-comparison-results {
+    background: #f8f9fa;
+    padding: 30px;
+    border-radius: 12px;
+    margin: 30px 0;
+    text-align: center;
+}
+
+.match-score-display {
+    margin: 30px 0;
+}
+
+.score-circle {
+    width: 150px;
+    height: 150px;
+    border: 8px solid;
+    border-radius: 50%;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.score-number {
+    font-size: 48px;
+    font-weight: bold;
+}
+
+.score-label {
+    font-size: 18px;
+    color: #666;
+}
+
+.match-level {
+    font-size: 24px;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-top: 10px;
+}
+
+.comparison-feedback {
+    text-align: left;
+    margin: 30px 0;
+}
+
+.feedback-box {
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.success-box {
+    background: #d4edda;
+    border-left: 4px solid #28a745;
+}
+
+.warning-box {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+}
+
+.feedback-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.strengths-box, .improvements-box {
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    border-left: 4px solid;
+}
+
+.strengths-box {
+    border-color: #28a745;
+}
+
+.improvements-box {
+    border-color: #ffc107;
+}
+
+.credits-awarded {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 12px;
+    margin: 30px 0;
+}
+
+.credits-amount {
+    font-size: 48px;
+    font-weight: bold;
+    margin: 20px 0;
+}
+
+.credits-info {
+    background: #fff3cd;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+.no-credits {
+    background: #f8d7da;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
 .success-icon {
     font-size: 48px;
     margin-bottom: 20px;
@@ -609,6 +847,30 @@ const submitIdeaCSS = `
     font-style: italic;
     color: #059669;
     margin-top: 20px;
+}
+
+.action-buttons {
+    margin: 30px 0 20px 0;
+    text-align: center;
+}
+
+.btn-dashboard {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-dashboard:hover {
+    background: #2563eb;
 }
 
 .error-message {

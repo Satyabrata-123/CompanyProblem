@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Working Demo Challenge</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .challenge-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .challenge-title {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        .challenge-meta {
+            color: #666;
+            font-size: 1.1rem;
+        }
+        .challenge-content {
+            margin: 30px 0;
+        }
+        .challenge-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .challenge-section h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        .submit-btn {
+            display: block;
+            width: 100%;
+            max-width: 300px;
+            margin: 30px auto;
+            padding: 15px 30px;
+            background: linear-gradient(45deg, #007bff, #0056b3);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.4);
+        }
+        .demo-notice {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .nav-links {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .nav-links a {
+            display: inline-block;
+            margin: 0 10px;
+            padding: 10px 20px;
+            background: #6c757d;
+            color: white;
+            text-decoration: none;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+        }
+        .nav-links a:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="challenge-header">
+            <h1 class="challenge-title">Demo: Customer Support Innovation</h1>
+            <div class="challenge-meta">
+                🟢 BEGINNER • $250 Reward • Demo Company
+            </div>
+        </div>
+
+        <div class="demo-notice">
+            <strong>🧪 Working Demo Challenge:</strong> This challenge always works and demonstrates the full AI comparison system!
+        </div>
+
+        <div class="challenge-content">
+            <div class="challenge-section">
+                <h3>📋 Challenge Description</h3>
+                <p>Find innovative ways to improve customer support response time and satisfaction. This is a working demo challenge that showcases our AI-powered analysis system.</p>
+                <p>Current average response time is 24 hours. We're looking for innovative solutions that can reduce this significantly while maintaining or improving customer satisfaction.</p>
+            </div>
+
+            <div class="challenge-section">
+                <h3>🎯 Requirements</h3>
+                <ul>
+                    <li>Solution must be technically feasible</li>
+                    <li>Should reduce response time by at least 50%</li>
+                    <li>Must maintain or improve customer satisfaction</li>
+                    <li>Consider scalability and cost-effectiveness</li>
+                </ul>
+            </div>
+
+            <div class="challenge-section">
+                <h3>🏆 Evaluation Criteria</h3>
+                <ul>
+                    <li>Innovation and creativity (30%)</li>
+                    <li>Technical feasibility (25%)</li>
+                    <li>Impact on customer satisfaction (25%)</li>
+                    <li>Implementation complexity (20%)</li>
+                </ul>
+            </div>
+
+            <div class="challenge-section">
+                <h3>💰 Rewards & AI Analysis</h3>
+                <p><strong>Base Reward:</strong> $250</p>
+                <p><strong>AI Match Bonus:</strong> 25% - 150% based on solution quality</p>
+                <p><strong>Credits System:</strong> Earn credits based on AI analysis score</p>
+                <p><strong>AI Features:</strong></p>
+                <ul>
+                    <li>🤖 Instant solution analysis</li>
+                    <li>📊 Match score (0-100)</li>
+                    <li>✅ Strengths identification</li>
+                    <li>🔧 Improvement suggestions</li>
+                    <li>💰 Automatic credit calculation</li>
+                </ul>
+            </div>
+        </div>
+
+        <button class="submit-btn" onclick="goToSubmission()">
+            🚀 Submit Your Innovation
+        </button>
+
+        <div class="nav-links">
+            <a href="http://localhost:3000/#/dashboard">📊 Dashboard</a>
+            <a href="http://localhost:3000/#/3d-guide">🌟 3D Guide</a>
+            <a href="test-challenges.html">🧪 More Demos</a>
+        </div>
+    </div>
+
+    <script>
+        function goToSubmission() {
+            // Try the main app first, fallback to demo
+            try {
+                window.location.href = 'http://localhost:3000/#/challenges/demo-challenge-working';
+            } catch (error) {
+                alert('🚀 This would normally take you to the submission page!\n\nIn the real app, you would:\n1. Fill out your innovative solution\n2. Get AI analysis with match score\n3. Receive credits based on quality\n4. See detailed feedback');
+            }
+        }
+    </script>
+</body>
+</html>

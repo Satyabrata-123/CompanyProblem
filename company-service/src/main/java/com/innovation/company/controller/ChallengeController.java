@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -149,5 +150,25 @@ public class ChallengeController {
             @PathVariable String difficulty,
             @PathVariable UUID id) {
         return ResponseEntity.ok(difficultyBasedChallengeService.getChallengeById(id, difficulty));
+    }
+
+    // Get challenge solution for AI comparison (internal use only)
+    @GetMapping("/{difficulty}/{challengeId}/solution")
+    public ResponseEntity<Map<String, String>> getChallengeSolution(
+            @PathVariable String difficulty,
+            @PathVariable UUID challengeId) {
+        try {
+            String solution = difficultyBasedChallengeService.getChallengeSolution(challengeId, difficulty);
+            
+            Map<String, String> response = new HashMap<>();
+            response.put("challengeId", challengeId.toString());
+            response.put("difficulty", difficulty);
+            response.put("solution", solution);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.err.println("Error getting challenge solution: " + e.getMessage());
+            return ResponseEntity.notFound().build();
+        }
     }
 }
