@@ -7,9 +7,10 @@ All services are running and the AI-powered idea comparison system is fully func
 ## 🚀 Quick Start
 
 1. **3D Landing Page**: http://localhost:3000/ - Interactive homepage
-2. **3D Platform Guide**: http://localhost:3000/#/3d-guide - Interactive guide
+2. **3D Platform Guide**: http://localhost:3000/#/3d-guide - Interactive guide  
 3. **AI Demo**: `test-challenges.html` - Test AI comparison system
-4. **Dashboard**: http://localhost:3000/#/dashboard - Main user dashboard
+4. **Working Demo**: `working-demo-challenge.html` - Always-working challenge demo
+5. **Dashboard**: http://localhost:3000/#/dashboard - Main user dashboard
 
 ## 🧪 Test the AI System
 

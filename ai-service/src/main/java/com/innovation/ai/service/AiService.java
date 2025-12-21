@@ -199,10 +199,11 @@ public class AiService {
 
         try {
             // Check if API key is properly configured
-            if (geminiApiKey == null || geminiApiKey.equals("AIzaSyALTcRkbOuznyc9hkqV-i6Om11o460yOfY")) {
+           if (geminiApiKey == null || geminiApiKey.isBlank()) {
                 System.out.println("Gemini API key not configured, using fallback scoring");
                 return calculateFallbackScore(title, description);
             }
+
 
             System.out.println("Calling Gemini API for scoring...");
 
@@ -408,10 +409,11 @@ public class AiService {
             System.out.println("Calling Gemini API for idea-solution comparison...");
 
             // Check if API key is properly configured
-            if (geminiApiKey == null || geminiApiKey.equals("your-actual-gemini-api-key-here")) {
+           if (geminiApiKey == null || geminiApiKey.isBlank()) {
                 System.out.println("Gemini API key not configured, using fallback comparison logic");
                 return createFallbackComparison(request);
             }
+
 
             Map<String, Object> response = webClientBuilder.build()
                     .post()
