@@ -21,5 +21,6 @@ management:
 # AI Configuration
 ai:
   gemini:
-    api-key: ${GEMINI_API_KEY:AIzaSyALTcRkbOuznyc9hkqV-i6Om11o460yOfY}
-    base-url: https://generativelanguage.googleapis.com/v1beta
+    api-key: YOUR_REAL_GEMINI_API_KEY_HERE  # Replace this with your actual 39+ character API key from Google AI Studio
+    base-url: https://generativelanguage.googleapis.com/v1
+    model: gemini-2.0-flash

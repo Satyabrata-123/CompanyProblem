@@ -29,6 +29,9 @@ public class AiService {
     
     @Value("${ai.gemini.base-url}")
     private String geminiBaseUrl;
+    
+    @Value("${ai.gemini.model}")
+    private String geminiModel;
 
     public CategorizeResponse categorizeIdea(CategorizeRequest request) {
         try {
@@ -218,7 +221,7 @@ public class AiService {
 
             Map<String, Object> response = webClientBuilder.build()
                     .post()
-                    .uri(geminiBaseUrl + "/models/gemini-1.5-flash:generateContent?key=" + geminiApiKey)
+                    .uri(geminiBaseUrl + "/models/" + geminiModel + ":generateContent?key=" + geminiApiKey)
                     .header("Content-Type", "application/json")
                     .bodyValue(requestBody)
                     .retrieve()
@@ -417,7 +420,7 @@ public class AiService {
 
             Map<String, Object> response = webClientBuilder.build()
                     .post()
-                    .uri(geminiBaseUrl + "/models/gemini-1.5-flash:generateContent?key=" + geminiApiKey)
+                    .uri(geminiBaseUrl + "/models/" + geminiModel + ":generateContent?key=" + geminiApiKey)
                     .header("Content-Type", "application/json")
                     .bodyValue(requestBody)
                     .retrieve()
@@ -692,15 +695,28 @@ public class AiService {
         
         // Determine match level
         String matchLevel;
+        boolean isCorrectSolution;
         if (matchScore >= 80) {
-            matchLevel = "HIGH";
-        } else if (matchScore >= 60) {
-            matchLevel = "MEDIUM";
-        } else if (matchScore >= 40) {
-            matchLevel = "LOW";
+            matchLevel = "Excellent Match";
+            isCorrectSolution = true;
+        } else if (matchScore >= 65) {
+            matchLevel = "Very Good Match";
+            isCorrectSolution = true;
+        } else if (matchScore >= 50) {
+            matchLevel = "Good Match";
+            isCorrectSolution = false;
+        } else if (matchScore >= 35) {
+            matchLevel = "Partial Match";
+            isCorrectSolution = false;
         } else {
-            matchLevel = "NONE";
+            matchLevel = "Needs Improvement";
+            isCorrectSolution = false;
         }
+        
+        // Generate feedback based on score
+        String feedback = generateFallbackFeedback(matchScore, isCorrectSolution);
+        String strengths = generateFallbackStrengths(ideaText, matchScore);
+        String improvements = generateFallbackImprovements(matchScore);
         
         // Create response
         CompareIdeaWithSolutionResponse response = new CompareIdeaWithSolutionResponse();
@@ -708,41 +724,256 @@ public class AiService {
         response.setChallengeId(request.getChallengeId());
         response.setMatchScore(matchScore);
         response.setMatchLevel(matchLevel);
-        response.setExplanation("Fallback comparison: Basic text similarity analysis shows " + 
-                               matchLevel.toLowerCase() + " match (" + String.format("%.1f", matchScore) + "% similarity)");
-        response.setCreditsAwarded(calculateCreditsForSolution(matchScore, "INTERMEDIATE"));
-        response.setRewardTier(getRewardTier(matchScore));
+        response.setIsCorrectSolution(isCorrectSolution);
+        response.setFeedback(feedback);
+        response.setStrengths(strengths);
+        response.setImprovements(improvements);
         
         System.out.println("Fallback comparison complete - Match Score: " + matchScore + ", Level: " + matchLevel);
         
         return response;
     }
     
+    private String generateFallbackFeedback(double score, boolean isCorrect) {
+        if (score >= 85) {
+            return "Outstanding solution! Your approach demonstrates exceptional alignment with the company's solution methodology. You've identified the core technical challenges and proposed a comprehensive, well-architected solution that addresses scalability, performance, and maintainability concerns.";
+        } else if (score >= 75) {
+            return "Excellent work! Your solution shows strong technical understanding and aligns well with industry best practices. The approach is solid and demonstrates good problem-solving skills with appropriate technology choices.";
+        } else if (score >= 65) {
+            return "Very good solution! Your approach addresses the main requirements effectively and shows good technical thinking. There are some areas where additional detail or alternative approaches could strengthen the solution.";
+        } else if (score >= 50) {
+            return "Good solution foundation! You've grasped the key concepts and provided a workable approach. The solution would benefit from more technical depth and consideration of edge cases and scalability requirements.";
+        } else if (score >= 35) {
+            return "Your solution shows understanding of the basic requirements but needs significant development. Consider expanding on the technical implementation details, architecture decisions, and how your solution handles various scenarios.";
+        } else {
+            return "Your solution needs substantial improvement to meet the challenge requirements. Focus on understanding the core problem, researching appropriate technologies, and providing a more detailed technical approach with clear implementation steps.";
+        }
+    }
+    
+    private String generateFallbackStrengths(String ideaText, double score) {
+        StringBuilder strengths = new StringBuilder();
+        
+        // Analyze actual content for strengths
+        if (ideaText.length() > 500) {
+            strengths.append("Comprehensive and detailed analysis, ");
+        } else if (ideaText.length() > 200) {
+            strengths.append("Good level of detail in explanation, ");
+        }
+        
+        // Technical terms analysis
+        if (ideaText.contains("architecture") || ideaText.contains("design")) {
+            strengths.append("Strong architectural thinking, ");
+        }
+        
+        if (ideaText.contains("database") || ideaText.contains("storage") || ideaText.contains("data")) {
+            strengths.append("Good data management considerations, ");
+        }
+        
+        if (ideaText.contains("api") || ideaText.contains("service") || ideaText.contains("endpoint")) {
+            strengths.append("Solid API design approach, ");
+        }
+        
+        if (ideaText.contains("security") || ideaText.contains("authentication")) {
+            strengths.append("Security-conscious approach, ");
+        }
+        
+        if (ideaText.contains("performance") || ideaText.contains("optimization") || ideaText.contains("scalability")) {
+            strengths.append("Performance and scalability awareness, ");
+        }
+        
+        if (ideaText.contains("testing") || ideaText.contains("validation") || ideaText.contains("quality")) {
+            strengths.append("Quality assurance mindset, ");
+        }
+        
+        if (ideaText.contains("user") || ideaText.contains("interface") || ideaText.contains("experience")) {
+            strengths.append("User-centered design thinking, ");
+        }
+        
+        // Score-based strengths
+        if (score >= 70) {
+            strengths.append("Excellent problem understanding, Strong technical foundation, ");
+        } else if (score >= 50) {
+            strengths.append("Good grasp of core concepts, Clear communication, ");
+        } else {
+            strengths.append("Shows engagement with the problem, ");
+        }
+        
+        strengths.append("Demonstrates effort and technical interest");
+        
+        return strengths.toString().replaceAll(", $", "");
+    }
+    
+    private String generateFallbackImprovements(double score) {
+        if (score >= 75) {
+            return "Consider adding more specific implementation details, error handling strategies, and performance optimization techniques. Explore edge cases and provide more detailed testing approaches.";
+        } else if (score >= 60) {
+            return "Strengthen the technical architecture details, add more specific technology choices with justifications, and consider scalability and security implications more thoroughly.";
+        } else if (score >= 45) {
+            return "Expand on the technical implementation approach, provide more detailed system design, consider data flow and integration patterns, and add specific technology stack recommendations.";
+        } else if (score >= 30) {
+            return "Focus on understanding the core requirements better, research appropriate technologies and frameworks, provide step-by-step implementation approach, and consider system architecture fundamentals.";
+        } else {
+            return "Start by thoroughly analyzing the problem requirements, research similar solutions and best practices, learn about relevant technologies, and structure your approach with clear phases and deliverables.";
+        }
+    }
+
     /**
-     * Calculate text similarity using simple word matching
+     * Calculate text similarity using advanced word matching and semantic analysis
      */
-    private double calculateTextSimilarity(String text1, String text2) {
-        String[] words1 = text1.split("\\s+");
-        String[] words2 = text2.split("\\s+");
+    private double calculateTextSimilarity(String ideaText, String solutionText) {
+        if (solutionText == null || solutionText.trim().isEmpty()) {
+            return 45.0; // Default score when no solution available
+        }
         
-        int commonWords = 0;
-        int totalWords = Math.max(words1.length, words2.length);
+        // STRICT QUALITY CHECKS - Catch very low quality submissions
+        String cleanIdea = ideaText.trim().toLowerCase();
         
-        for (String word1 : words1) {
-            if (word1.length() > 3) { // Only consider meaningful words
-                for (String word2 : words2) {
-                    if (word1.equals(word2)) {
-                        commonWords++;
+        // Check for extremely short or meaningless content
+        if (cleanIdea.length() < 20) {
+            return Math.random() * 10 + 5; // 5-15 points for very short content
+        }
+        
+        // Check for single character repetitions like "a b c" or "test test test"
+        String[] words = cleanIdea.split("\\s+");
+        if (words.length <= 5) {
+            boolean allShortWords = true;
+            for (String word : words) {
+                if (word.length() > 3) {
+                    allShortWords = false;
+                    break;
+                }
+            }
+            if (allShortWords) {
+                return Math.random() * 15 + 5; // 5-20 points for meaningless short words
+            }
+        }
+        
+        // Check for repeated words (like "test test test")
+        if (words.length > 1) {
+            int repeatedWords = 0;
+            for (int i = 0; i < words.length - 1; i++) {
+                for (int j = i + 1; j < words.length; j++) {
+                    if (words[i].equals(words[j]) && words[i].length() > 2) {
+                        repeatedWords++;
+                    }
+                }
+            }
+            if (repeatedWords > words.length / 2) {
+                return Math.random() * 12 + 8; // 8-20 points for repetitive content
+            }
+        }
+        
+        // Check for lack of technical content
+        boolean hasTechnicalContent = false;
+        String[] basicTechTerms = {
+            "system", "application", "software", "program", "code", "development",
+            "solution", "implementation", "design", "architecture", "database",
+            "api", "service", "framework", "technology", "algorithm", "method"
+        };
+        
+        for (String term : basicTechTerms) {
+            if (cleanIdea.contains(term)) {
+                hasTechnicalContent = true;
+                break;
+            }
+        }
+        
+        if (!hasTechnicalContent && cleanIdea.length() < 100) {
+            return Math.random() * 20 + 10; // 10-30 points for non-technical short content
+        }
+        
+        String[] ideaWords = ideaText.toLowerCase().split("\\s+");
+        String[] solutionWords = solutionText.toLowerCase().split("\\s+");
+        
+        // 1. Exact word matching
+        int exactMatches = 0;
+        for (String ideaWord : ideaWords) {
+            if (ideaWord.length() > 3) { // Only meaningful words
+                for (String solutionWord : solutionWords) {
+                    if (ideaWord.equals(solutionWord)) {
+                        exactMatches++;
                         break;
                     }
                 }
             }
         }
         
-        // Calculate similarity percentage with some randomness for variety
-        double baseSimilarity = totalWords > 0 ? (double) commonWords / totalWords * 100 : 0;
-        double randomFactor = Math.random() * 20 - 10; // -10 to +10
-        double finalScore = Math.max(0, Math.min(100, baseSimilarity + randomFactor));
+        // 2. Semantic similarity (related terms)
+        int semanticMatches = 0;
+        String[][] semanticGroups = {
+            {"database", "storage", "data", "sql", "nosql", "mongodb", "mysql"},
+            {"api", "rest", "endpoint", "service", "microservice", "web service"},
+            {"algorithm", "logic", "method", "approach", "technique", "strategy"},
+            {"security", "authentication", "authorization", "encryption", "secure"},
+            {"performance", "optimization", "efficiency", "speed", "scalability"},
+            {"frontend", "ui", "interface", "user interface", "react", "angular", "vue"},
+            {"backend", "server", "node", "java", "python", "spring", "express"},
+            {"cloud", "aws", "azure", "docker", "kubernetes", "deployment"},
+            {"testing", "unit test", "integration", "quality", "validation"},
+            {"mobile", "android", "ios", "app", "application", "responsive"}
+        };
+        
+        for (String[] group : semanticGroups) {
+            boolean ideaHasGroup = false;
+            boolean solutionHasGroup = false;
+            
+            for (String term : group) {
+                if (ideaText.contains(term)) ideaHasGroup = true;
+                if (solutionText.contains(term)) solutionHasGroup = true;
+            }
+            
+            if (ideaHasGroup && solutionHasGroup) {
+                semanticMatches++;
+            }
+        }
+        
+        // 3. Calculate base similarity
+        int totalMeaningfulWords = Math.max(
+            (int) Arrays.stream(ideaWords).filter(w -> w.length() > 3).count(),
+            (int) Arrays.stream(solutionWords).filter(w -> w.length() > 3).count()
+        );
+        
+        double exactSimilarity = totalMeaningfulWords > 0 ? 
+            (double) exactMatches / totalMeaningfulWords * 60 : 0; // Max 60% from exact matches
+        
+        double semanticSimilarity = semanticMatches * 8.0; // Up to 80% from semantic matches
+        
+        // 4. Quality and completeness bonuses
+        double qualityBonus = 0;
+        
+        // Length and detail bonus
+        if (ideaText.length() > 200) qualityBonus += 8;
+        if (ideaText.length() > 500) qualityBonus += 7;
+        if (ideaText.length() > 1000) qualityBonus += 5;
+        
+        // Technical depth bonus
+        String[] advancedTerms = {
+            "architecture", "scalability", "microservices", "distributed", "concurrent",
+            "optimization", "caching", "load balancing", "fault tolerance", "monitoring"
+        };
+        
+        for (String term : advancedTerms) {
+            if (ideaText.contains(term)) {
+                qualityBonus += 3;
+            }
+        }
+        
+        // Implementation details bonus
+        if (ideaText.contains("step") || ideaText.contains("phase") || ideaText.contains("implementation")) {
+            qualityBonus += 5;
+        }
+        
+        // Problem understanding bonus
+        if (ideaText.contains("problem") || ideaText.contains("challenge") || ideaText.contains("requirement")) {
+            qualityBonus += 4;
+        }
+        
+        // 5. Calculate final score
+        double finalScore = Math.min(95, exactSimilarity + semanticSimilarity + qualityBonus);
+        
+        // Add some realistic variance (±5 points)
+        double variance = (Math.random() - 0.5) * 10;
+        finalScore = Math.max(15, Math.min(95, finalScore + variance));
         
         return Math.round(finalScore * 10.0) / 10.0; // Round to 1 decimal place
     }

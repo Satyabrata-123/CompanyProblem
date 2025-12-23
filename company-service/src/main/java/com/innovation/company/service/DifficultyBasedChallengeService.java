@@ -2,10 +2,14 @@ package com.innovation.company.service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import com.innovation.common.dto.ChallengeDTO;
 import com.innovation.common.dto.ChallengeIdeaDTO;
@@ -31,6 +35,7 @@ public class DifficultyBasedChallengeService {
     private final ExpertChallengeRepository expertRepository;
     private final ChallengeIdeaRepository challengeIdeaRepository;
     private final CompanyRepository companyRepository;
+    private final WebClient.Builder webClientBuilder;
 
     public ChallengeDTO createChallenge(ChallengeDTO challengeDTO, String internalSolutionBrief) {
         Company company = companyRepository.findById(challengeDTO.getCompanyId())
@@ -259,6 +264,35 @@ public class DifficultyBasedChallengeService {
             // Only increment challenge submission count for actual challenges, not community ideas
             if (!"COMMUNITY".equals(ideaDTO.getChallengeDifficulty()) && ideaDTO.getChallengeId() != null) {
                 incrementChallengeSubmissions(ideaDTO.getChallengeId(), ideaDTO.getChallengeDifficulty());
+                
+                // Compare idea with company solution using AI
+                try {
+                    Map<String, Object> comparisonResult = compareIdeaWithSolution(saved, ideaDTO);
+                    
+                    // Update the saved idea with AI comparison results
+                    if (comparisonResult != null && comparisonResult.containsKey("matchScore")) {
+                        Double matchScore = ((Number) comparisonResult.get("matchScore")).doubleValue();
+                        String feedback = (String) comparisonResult.get("feedback");
+                        Boolean isCorrect = (Boolean) comparisonResult.get("isCorrectSolution");
+                        
+                        // Update company score based on AI match score
+                        saved.setCompanyScore(matchScore.intValue());
+                        saved.setCompanyFeedback(feedback);
+                        
+                        // Update status based on match quality
+                        if (isCorrect != null && isCorrect) {
+                            saved.setStatus(ChallengeIdea.IdeaStatus.ACCEPTED);
+                        } else if (matchScore >= 40) {
+                            saved.setStatus(ChallengeIdea.IdeaStatus.UNDER_REVIEW);
+                        }
+                        
+                        saved = challengeIdeaRepository.save(saved);
+                        System.out.println("Updated idea with AI comparison - Score: " + matchScore);
+                    }
+                } catch (Exception e) {
+                    System.err.println("AI comparison failed, continuing without it: " + e.getMessage());
+                    // Don't fail the submission if AI comparison fails
+                }
             }
             
             return convertIdeaToDTO(saved);
@@ -293,6 +327,89 @@ public class DifficultyBasedChallengeService {
                     .orElseThrow(() -> new RuntimeException("Challenge not found"));
             default -> throw new RuntimeException("Invalid difficulty level");
         };
+    }
+
+    /**
+     * Compare submitted idea with company's solution using ChatModel (Python/Gemini)
+     */
+    private Map<String, Object> compareIdeaWithSolution(ChallengeIdea idea, ChallengeIdeaDTO ideaDTO) {
+        try {
+            // Get the challenge details and solution
+            String difficulty = ideaDTO.getChallengeDifficulty();
+            UUID challengeId = idea.getChallengeId();
+            
+            if (challengeId == null) {
+                System.out.println("No challenge ID, skipping AI comparison");
+                return null;
+            }
+            
+            // Get challenge details
+            ChallengeDTO challenge = getChallengeById(challengeId, difficulty);
+            String companySolution = getChallengeSolution(challengeId, difficulty);
+            
+            if (companySolution == null || companySolution.trim().isEmpty()) {
+                System.out.println("No company solution available, skipping AI comparison");
+                return null;
+            }
+            
+            // Prepare request for ChatModel (Python service)
+            Map<String, Object> request = new HashMap<>();
+            request.put("ideaId", idea.getId().toString());
+            request.put("challengeId", challengeId.toString());
+            request.put("ideaTitle", idea.getTitle());
+            request.put("ideaDescription", buildFullIdeaDescription(idea));
+            request.put("challengeTitle", challenge.getTitle());
+            request.put("challengeDescription", challenge.getDescription());
+            request.put("companySolution", companySolution);
+            
+            System.out.println("Calling ChatModel (Python/Gemini) to compare idea with solution...");
+            
+            // Call ChatModel service (Python with Langchain/Gemini)
+            Map<String, Object> response = webClientBuilder.build()
+                    .post()
+                    .uri("http://localhost:5000/chat/compare-with-solution")
+                    .bodyValue(request)
+                    .retrieve()
+                    .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
+                    .block();
+            
+            if (response != null && response.containsKey("comparison")) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> comparison = (Map<String, Object>) response.get("comparison");
+                System.out.println("ChatModel comparison completed successfully");
+                return comparison;
+            }
+            
+            System.out.println("ChatModel comparison returned no results");
+            return null;
+            
+        } catch (Exception e) {
+            System.err.println("Error comparing idea with solution via ChatModel: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+    
+    /**
+     * Build full idea description including all details for AI comparison
+     */
+    private String buildFullIdeaDescription(ChallengeIdea idea) {
+        StringBuilder fullDescription = new StringBuilder();
+        fullDescription.append(idea.getDescription());
+        
+        if (idea.getSolutionApproach() != null && !idea.getSolutionApproach().trim().isEmpty()) {
+            fullDescription.append("\n\nSolution Approach:\n").append(idea.getSolutionApproach());
+        }
+        
+        if (idea.getTechnicalDetails() != null && !idea.getTechnicalDetails().trim().isEmpty()) {
+            fullDescription.append("\n\nTechnical Details:\n").append(idea.getTechnicalDetails());
+        }
+        
+        if (idea.getImplementationPlan() != null && !idea.getImplementationPlan().trim().isEmpty()) {
+            fullDescription.append("\n\nImplementation Plan:\n").append(idea.getImplementationPlan());
+        }
+        
+        return fullDescription.toString();
     }
 
     private void incrementChallengeSubmissions(UUID challengeId, String difficulty) {

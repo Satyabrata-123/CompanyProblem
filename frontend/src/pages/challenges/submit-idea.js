@@ -12,7 +12,7 @@ export class SubmitIdeaPage {
         // Check if this is an idea-based submission or challenge submission
         const originalIdeaContext = JSON.parse(localStorage.getItem('originalIdeaContext') || 'null');
         const challengeContext = JSON.parse(localStorage.getItem('challengeContext') || 'null');
-        
+
         const isIdeaBasedSubmission = originalIdeaContext && originalIdeaContext.ideaId === this.challengeId;
         const isChallengeSubmission = challengeContext && challengeContext.challengeId === this.challengeId;
 
@@ -228,9 +228,9 @@ export class SubmitIdeaPage {
         // Check both currentUser and innovation_user for authentication
         const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
         const innovationUser = JSON.parse(localStorage.getItem('innovation_user') || '{}');
-        
+
         const user = currentUser.id ? currentUser : innovationUser;
-        
+
         if (!user.id) {
             this.showLoginRequired();
             return;
@@ -273,62 +273,90 @@ export class SubmitIdeaPage {
             const response = await window.app.api.post('/challenges/ideas', ideaData);
             console.log('✅ Idea submitted:', response);
 
+            // Show pending analysis state immediately
+            this.showPendingAnalysis(response);
+
             // Step 2: If this is a challenge submission (not community), compare with company solution
             let comparisonResult = null;
             let creditsAwarded = 0;
 
             if (!this.isIdeaBasedSubmission && this.challenge) {
                 try {
-                    console.log('🤖 Fetching company solution for comparison...');
-                    
-                    // Fetch the company's solution (internal use only)
+                    console.log('🤖 Starting AI analysis and comparison...');
+
+                    // Update pending state to show AI analysis is starting
+                    this.updatePendingState('🤖 AI is analyzing your idea...');
+
+                    // Step 2a: First, fetch the company's solution
+                    console.log('Fetching company solution...');
                     const solutionResponse = await window.app.api.get(
                         `/challenges/${this.difficulty}/${this.challengeId}/solution`
                     );
-                    
-                    if (solutionResponse && solutionResponse.solution) {
-                        console.log('✅ Company solution retrieved');
-                        
-                        // Compare user's idea with company solution
-                        const comparisonRequest = {
-                            ideaId: response.id,
-                            ideaTitle: ideaData.title,
-                            ideaDescription: ideaData.description + '\n\nSolution Approach: ' + ideaData.solutionApproach,
-                            challengeId: this.challengeId,
-                            challengeTitle: this.challenge.title,
-                            challengeDescription: this.challenge.description,
-                            companySolution: solutionResponse.solution
-                        };
 
-                        comparisonResult = await window.app.api.compareIdeaWithSolution(comparisonRequest);
-                        console.log('✅ AI Comparison complete:', comparisonResult);
+                    if (!solutionResponse || !solutionResponse.solution) {
+                        throw new Error('Company solution not available');
+                    }
 
-                        // Step 3: Calculate credits based on match score
-                        if (comparisonResult.matchScore >= 40) {
-                            const creditsResponse = await fetch(
-                                `/api/ai/calculate-credits?matchScore=${comparisonResult.matchScore}&difficulty=${this.difficulty}`
-                            );
-                            const creditsData = await creditsResponse.json();
-                            creditsAwarded = creditsData.credits;
-                            
-                            console.log('💰 Credits calculated:', creditsData);
+                    console.log('✅ Company solution retrieved');
 
-                            // Award credits to user (you can integrate with gamification service here)
-                            if (creditsAwarded > 0) {
-                                try {
-                                    // TODO: Call gamification service to award credits
-                                    console.log(`💰 Awarding ${creditsAwarded} credits to user ${user.id}`);
-                                } catch (e) {
-                                    console.warn('Failed to award credits:', e);
-                                }
-                            }
+                    // Step 2b: Send idea to AI for analysis and comparison with company solution
+                    const comparisonRequest = {
+                        ideaId: response.id,
+                        ideaTitle: ideaData.title,
+                        ideaDescription: ideaData.description + '\n\nSolution Approach: ' + ideaData.solutionApproach +
+                            (ideaData.technicalDetails ? '\n\nTechnical Details: ' + ideaData.technicalDetails : '') +
+                            (ideaData.implementationPlan ? '\n\nImplementation Plan: ' + ideaData.implementationPlan : ''),
+                        challengeId: this.challengeId,
+                        challengeTitle: this.challenge.title,
+                        challengeDescription: this.challenge.description,
+                        companySolution: solutionResponse.solution
+                    };
+
+                    console.log('Sending comparison request to AI...');
+
+                    // Use the existing compareIdeaWithSolution API method
+                    comparisonResult = await window.app.api.compareIdeaWithSolution(comparisonRequest);
+                    console.log('✅ AI Comparison complete:', comparisonResult);
+
+                    // Update pending state to show credit calculation
+                    this.updatePendingState('💰 Calculating your rewards...');
+
+                    // Step 3: Calculate and award credits based on match score
+                    if (comparisonResult.matchScore >= 40) {
+                        try {
+                            // Calculate credits based on score and difficulty
+                            const difficultyMultiplier = {
+                                'BEGINNER': 1.0,
+                                'INTERMEDIATE': 1.5,
+                                'EXPERT': 2.0
+                            };
+
+                            const baseCredits = Math.round(comparisonResult.matchScore * 0.5);
+                            creditsAwarded = Math.round(baseCredits * (difficultyMultiplier[this.difficulty] || 1.0));
+
+                            console.log('💰 Credits calculated:', creditsAwarded);
+
+                            // TODO: Integrate with gamification service to actually award credits
+                            // For now, we'll just log the credits that should be awarded
+                            console.log(`💰 Should award ${creditsAwarded} credits to user ${user.id}`);
+                        } catch (creditsError) {
+                            console.warn('Failed to calculate credits:', creditsError);
+                            creditsAwarded = 0;
                         }
-                    } else {
-                        console.warn('⚠️ No solution available for this challenge');
                     }
                 } catch (error) {
                     console.error('❌ AI comparison failed:', error);
-                    // Don't fail the submission if comparison fails
+
+                    // Show error but don't fail the entire submission
+                    comparisonResult = {
+                        matchScore: 0,
+                        matchLevel: 'Analysis Failed',
+                        isCorrectSolution: false,
+                        feedback: `AI analysis failed: ${error.message}. Your submission has been recorded and will be reviewed manually.`,
+                        strengths: 'Your submission has been successfully recorded.',
+                        improvements: 'AI analysis will be available when the service is restored.'
+                    };
+                    creditsAwarded = 10; // Minimal credits for submission
                 }
             }
 
@@ -345,7 +373,76 @@ export class SubmitIdeaPage {
         }
     }
 
+    showPendingAnalysis(idea) {
+        const container = document.querySelector('.submit-idea-container');
+
+        container.innerHTML = `
+            <div class="pending-analysis">
+                <div class="pending-icon">
+                    <div class="spinner"></div>
+                </div>
+                <h2>🎉 Idea Submitted Successfully!</h2>
+                <p>Your solution has been submitted and is now being analyzed...</p>
+                
+                <div class="analysis-steps">
+                    <div class="step active">
+                        <div class="step-icon">✅</div>
+                        <div class="step-text">Idea Submitted</div>
+                    </div>
+                    <div class="step active" id="ai-analysis-step">
+                        <div class="step-icon">🤖</div>
+                        <div class="step-text">AI Analysis in Progress...</div>
+                    </div>
+                    <div class="step" id="scoring-step">
+                        <div class="step-icon">📊</div>
+                        <div class="step-text">Calculating Score</div>
+                    </div>
+                    <div class="step" id="results-step">
+                        <div class="step-icon">🏆</div>
+                        <div class="step-text">Showing Results</div>
+                    </div>
+                </div>
+                
+                <div class="idea-summary">
+                    <h3>Your Submission:</h3>
+                    <p><strong>Title:</strong> ${idea.title}</p>
+                    <p><strong>Status:</strong> ANALYZING</p>
+                    <p><strong>Submitted:</strong> ${new Date().toLocaleString()}</p>
+                </div>
+                
+                <div class="pending-message">
+                    <p>Please wait while our AI analyzes your solution and compares it with the company's approach...</p>
+                </div>
+            </div>
+        `;
+    }
+
+    updatePendingState(message) {
+        const pendingMessage = document.querySelector('.pending-message p');
+        if (pendingMessage) {
+            pendingMessage.textContent = message;
+        }
+
+        // Update step indicators
+        if (message.includes('analyzing')) {
+            this.activateStep('ai-analysis-step');
+        } else if (message.includes('rewards') || message.includes('credits')) {
+            this.activateStep('scoring-step');
+        }
+    }
+
+    activateStep(stepId) {
+        const step = document.getElementById(stepId);
+        if (step) {
+            step.classList.add('active');
+        }
+    }
+
     showSuccessMessage(idea, comparisonResult = null, creditsAwarded = 0) {
+        // Activate final steps
+        this.activateStep('scoring-step');
+        this.activateStep('results-step');
+
         const container = document.querySelector('.submit-idea-container');
         const isIdeaBasedSubmission = this.isIdeaBasedSubmission;
 
@@ -357,105 +454,126 @@ export class SubmitIdeaPage {
             else if (comparisonResult.matchScore >= 40) scoreColor = '#ffc107';
         }
 
-        container.innerHTML = `
-            <div class="success-message">
-                <div class="success-icon">🎉</div>
-                <h2>${isIdeaBasedSubmission ? 'Solution Submitted Successfully!' : 'Idea Submitted Successfully!'}</h2>
-                <p>Your ${isIdeaBasedSubmission ? 'solution' : 'solution idea'} has been submitted and analyzed by AI.</p>
-                
-                ${comparisonResult ? `
-                    <div class="ai-comparison-results">
-                        <h3>🤖 AI Analysis Results</h3>
-                        
-                        <div class="match-score-display">
-                            <div class="score-circle" style="border-color: ${scoreColor}">
-                                <span class="score-number" style="color: ${scoreColor}">${Math.round(comparisonResult.matchScore)}</span>
-                                <span class="score-label">/100</span>
-                            </div>
-                            <div class="match-level" style="color: ${scoreColor}">
-                                ${comparisonResult.matchLevel}
-                            </div>
-                        </div>
-
-                        <div class="comparison-feedback">
-                            <div class="feedback-box ${comparisonResult.isCorrectSolution ? 'success-box' : 'warning-box'}">
-                                <h4>${comparisonResult.isCorrectSolution ? '✅ Correct Solution!' : '💡 Partial Match'}</h4>
-                                <p>${comparisonResult.feedback}</p>
-                            </div>
-
-                            <div class="feedback-details">
-                                <div class="strengths-box">
-                                    <h4>✅ Strengths</h4>
-                                    <p>${comparisonResult.strengths}</p>
+        // Wait a moment to show the final step activation, then show results
+        setTimeout(() => {
+            container.innerHTML = `
+                <div class="success-message">
+                    <div class="success-icon">🎉</div>
+                    <h2>${isIdeaBasedSubmission ? 'Solution Submitted Successfully!' : 'Idea Submitted Successfully!'}</h2>
+                    <p>Your ${isIdeaBasedSubmission ? 'solution' : 'solution idea'} has been submitted and analyzed by AI.</p>
+                    
+                    ${comparisonResult ? `
+                        <div class="ai-comparison-results">
+                            <h3>🤖 AI Analysis Results</h3>
+                            
+                            <div class="match-score-display">
+                                <div class="score-circle" style="border-color: ${scoreColor}">
+                                    <span class="score-number" style="color: ${scoreColor}">${Math.round(comparisonResult.matchScore)}</span>
+                                    <span class="score-label">/100</span>
                                 </div>
-                                <div class="improvements-box">
-                                    <h4>🔧 Areas for Improvement</h4>
-                                    <p>${comparisonResult.improvements}</p>
+                                <div class="match-level" style="color: ${scoreColor}">
+                                    ${comparisonResult.matchLevel}
                                 </div>
                             </div>
-                        </div>
 
-                        ${creditsAwarded > 0 ? `
-                            <div class="credits-awarded">
-                                <h3>💰 Credits Awarded</h3>
-                                <div class="credits-amount">${creditsAwarded} Credits</div>
-                                <p>Based on your ${comparisonResult.matchLevel} match with the company solution!</p>
+                            <div class="comparison-feedback">
+                                <div class="feedback-box ${comparisonResult.isCorrectSolution ? 'success-box' : 'warning-box'}">
+                                    <h4>${comparisonResult.isCorrectSolution ? '✅ Correct Solution!' : '💡 Partial Match'}</h4>
+                                    <p>${comparisonResult.feedback}</p>
+                                </div>
+
+                                <div class="feedback-details">
+                                    <div class="strengths-box">
+                                        <h4>✅ Strengths</h4>
+                                        <p>${comparisonResult.strengths}</p>
+                                    </div>
+                                    <div class="improvements-box">
+                                        <h4>🔧 Areas for Improvement</h4>
+                                        <p>${comparisonResult.improvements}</p>
+                                    </div>
+                                </div>
                             </div>
-                        ` : comparisonResult.matchScore >= 40 ? `
-                            <div class="credits-info">
-                                <p>⚠️ Your score qualifies for ${Math.round(comparisonResult.matchScore * 0.25)} credits, but credit awarding is pending.</p>
-                            </div>
-                        ` : `
-                            <div class="no-credits">
-                                <p>💡 Score below 40 doesn't qualify for credits. Keep improving!</p>
-                            </div>
-                        `}
+
+                            ${creditsAwarded > 0 ? `
+                                <div class="credits-awarded">
+                                    <h3>💰 Credits Awarded</h3>
+                                    <div class="credits-amount">${creditsAwarded} Credits</div>
+                                    <p>Based on your ${comparisonResult.matchLevel} match with the company solution!</p>
+                                </div>
+                            ` : comparisonResult.matchScore >= 40 ? `
+                                <div class="credits-info">
+                                    <p>⚠️ Your score qualifies for ${Math.round(comparisonResult.matchScore * 0.25)} credits, but credit awarding is pending.</p>
+                                </div>
+                            ` : `
+                                <div class="no-credits">
+                                    <p>💡 Score below 40 doesn't qualify for credits. Keep improving!</p>
+                                </div>
+                            `}
+                        </div>
+                    ` : ''}
+                    
+                    <div class="idea-summary">
+                        <h3>Your Submission:</h3>
+                        <p><strong>Title:</strong> ${idea.title}</p>
+                        <p><strong>Status:</strong> ${comparisonResult ? 'ANALYZED' : 'SUBMITTED'}</p>
+                        ${comparisonResult ? `<p><strong>Match Score:</strong> ${Math.round(comparisonResult.matchScore)}/100</p>` : ''}
+                        ${creditsAwarded > 0 ? `<p><strong>Credits Earned:</strong> ${creditsAwarded}</p>` : ''}
+                        <p><strong>Submitted:</strong> ${new Date().toLocaleString()}</p>
                     </div>
-                ` : ''}
-                
-                <div class="idea-summary">
-                    <h3>Your Submission:</h3>
-                    <p><strong>Title:</strong> ${idea.title}</p>
-                    <p><strong>Status:</strong> ${idea.status || 'SUBMITTED'}</p>
-                    ${comparisonResult ? `<p><strong>Match Score:</strong> ${Math.round(comparisonResult.matchScore)}/100</p>` : ''}
-                    ${creditsAwarded > 0 ? `<p><strong>Credits Earned:</strong> ${creditsAwarded}</p>` : ''}
-                    <p><strong>Submitted:</strong> ${new Date().toLocaleString()}</p>
-                </div>
 
-                <div class="next-steps">
-                    <h3>What's Next:</h3>
-                    <ul>
-                        ${isIdeaBasedSubmission ? `
-                            <li>✅ Your solution is now visible to the community</li>
-                            <li>📧 You'll receive notifications about feedback</li>
-                            <li>⭐ Other users can vote on your solution</li>
-                            <li>🏆 Your solution may help others with similar problems</li>
-                        ` : `
-                            <li>✅ Your idea has been evaluated by AI</li>
-                            ${comparisonResult && comparisonResult.isCorrectSolution ? 
-                                '<li>🎉 Your solution matches the company\'s approach!</li>' : 
-                                '<li>💡 Review the feedback to improve your approach</li>'}
-                            ${creditsAwarded > 0 ? `<li>💰 ${creditsAwarded} credits have been added to your account</li>` : ''}
-                            <li>📧 You'll receive notifications about status updates</li>
-                            <li>⭐ Other users can vote on your idea</li>
-                        `}
-                    </ul>
+                    <div class="next-steps">
+                        <h3>What's Next:</h3>
+                        <ul>
+                            ${isIdeaBasedSubmission ? `
+                                <li>✅ Your solution is now visible to the community</li>
+                                <li>📧 You'll receive notifications about feedback</li>
+                                <li>⭐ Other users can vote on your solution</li>
+                                <li>🏆 Your solution may help others with similar problems</li>
+                            ` : `
+                                <li>✅ Your idea has been evaluated by AI</li>
+                                ${comparisonResult && comparisonResult.isCorrectSolution ?
+                    '<li>🎉 Your solution matches the company\'s approach!</li>' :
+                    '<li>💡 Review the feedback to improve your approach</li>'}
+                                ${creditsAwarded > 0 ? `<li>💰 ${creditsAwarded} credits have been added to your account</li>` : ''}
+                                <li>📧 You'll receive notifications about status updates</li>
+                                <li>⭐ Other users can vote on your idea</li>
+                            `}
+                        </ul>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="btn-dashboard" onclick="window.app.router.navigate('/company/dashboard')">
+                            🏢 Go to Dashboard Now
+                        </button>
+                    </div>
                 </div>
+            `;
+        }, 1000);
+    }
+
+    showLoginRequired() {
+        const container = document.querySelector('.submit-idea-container');
+
+        container.innerHTML = `
+            <div class="login-required">
+                <div class="login-icon">🔐</div>
+                <h2>Login Required</h2>
+                <p>You need to be logged in to submit ideas and solutions.</p>
                 
-                <div class="action-buttons">
-                    <button class="btn-dashboard" onclick="window.location.href='http://localhost:3000/#/company/dashboard'">
-                        🏢 Go to Dashboard Now
+                <div class="login-actions">
+                    <button class="btn-primary" onclick="window.app.router.navigate('/login')">
+                        Login Now
+                    </button>
+                    <button class="btn-secondary" onclick="window.app.router.navigate('/register')">
+                        Create Account
                     </button>
                 </div>
                 
-                <p class="redirect-notice">Redirecting to company dashboard in 5 seconds...</p>
+                <p class="login-note">
+                    Don't have an account? <a href="#/register">Sign up</a> to start submitting your innovative ideas!
+                </p>
             </div>
         `;
-
-        // Redirect after 5 seconds
-        setTimeout(() => {
-            window.location.href = 'http://localhost:3000/#/company/dashboard';
-        }, 5000);
     }
 
     showError(message) {
@@ -685,6 +803,133 @@ const submitIdeaCSS = `
     cursor: not-allowed;
 }
 
+.pending-analysis {
+    text-align: center;
+    padding: 60px 40px;
+}
+
+.pending-icon {
+    margin-bottom: 30px;
+}
+
+.spinner {
+    width: 60px;
+    height: 60px;
+    border: 6px solid #f3f3f3;
+    border-top: 6px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.analysis-steps {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    margin: 40px 0;
+    flex-wrap: wrap;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 20px;
+    border-radius: 12px;
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    transition: all 0.3s ease;
+    min-width: 120px;
+}
+
+.step.active {
+    background: #eff6ff;
+    border-color: #3b82f6;
+    transform: scale(1.05);
+}
+
+.step-icon {
+    font-size: 24px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid #e2e8f0;
+}
+
+.step.active .step-icon {
+    border-color: #3b82f6;
+    background: #3b82f6;
+    color: white;
+}
+
+.step-text {
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    text-align: center;
+}
+
+.step.active .step-text {
+    color: #1e40af;
+}
+
+.pending-message {
+    background: #f0f9ff;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 30px 0;
+    border-left: 4px solid #0ea5e9;
+}
+
+.login-required {
+    text-align: center;
+    padding: 60px 40px;
+}
+
+.login-icon {
+    font-size: 48px;
+    margin-bottom: 20px;
+}
+
+.login-required h2 {
+    color: #1e293b;
+    margin-bottom: 15px;
+}
+
+.login-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin: 30px 0;
+    flex-wrap: wrap;
+}
+
+.login-note {
+    color: #64748b;
+    font-size: 14px;
+    margin-top: 20px;
+}
+
+.login-note a {
+    color: #667eea;
+    text-decoration: none;
+}
+
+.login-note a:hover {
+    text-decoration: underline;
+}
+
 .success-message {
     text-align: center;
     padding: 60px 40px;
@@ -843,12 +1088,6 @@ const submitIdeaCSS = `
     line-height: 1.5;
 }
 
-.redirect-notice {
-    font-style: italic;
-    color: #059669;
-    margin-top: 20px;
-}
-
 .action-buttons {
     margin: 30px 0 20px 0;
     text-align: center;
@@ -915,6 +1154,26 @@ const submitIdeaCSS = `
     .challenge-details {
         flex-direction: column;
         gap: 10px;
+    }
+    
+    .analysis-steps {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .step {
+        min-width: auto;
+        width: 100%;
+        max-width: 200px;
+    }
+    
+    .feedback-details {
+        grid-template-columns: 1fr;
+    }
+    
+    .login-actions {
+        flex-direction: column;
+        align-items: center;
     }
 }
 `;
