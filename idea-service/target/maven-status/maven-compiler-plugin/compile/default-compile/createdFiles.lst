@@ -3,6 +3,8 @@ com\innovation\idea\service\SolutionService.class
 com\innovation\idea\entity\Solution.class
 com\innovation\idea\entity\Idea$IdeaBuilder.class
 com\innovation\idea\entity\Solution$SolutionBuilder.class
+com\innovation\idea\controller\IdeaController$ComparisonResultRequest.class
+com\innovation\idea\config\KafkaConfig.class
 com\innovation\idea\service\IdeaService.class
 com\innovation\idea\controller\IdeaController.class
 com\innovation\idea\entity\Idea.class

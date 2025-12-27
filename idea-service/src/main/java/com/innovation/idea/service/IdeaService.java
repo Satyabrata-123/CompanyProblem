@@ -118,6 +118,27 @@ public class IdeaService {
         ideaRepository.save(idea);
     }
 
+    @Transactional
+    public IdeaDTO updateComparisonResult(UUID ideaId, com.innovation.idea.controller.IdeaController.ComparisonResultRequest request) {
+        Idea idea = ideaRepository.findById(ideaId)
+                .orElseThrow(() -> new RuntimeException("Idea not found with id: " + ideaId));
+        
+        idea.setMatchScore(request.matchScore);
+        idea.setMatchLevel(request.matchLevel);
+        idea.setIsCorrectSolution(request.isCorrectSolution);
+        idea.setAiFeedback(request.feedback);
+        idea.setAiStrengths(request.strengths);
+        idea.setAiImprovements(request.improvements);
+        
+        // Also update AI score if match score is available
+        if (request.matchScore != null) {
+            idea.setAiScore(request.matchScore);
+        }
+        
+        Idea updatedIdea = ideaRepository.save(idea);
+        return mapToDTO(updatedIdea);
+    }
+
     private IdeaDTO mapToDTO(Idea idea) {
         return IdeaDTO.builder()
                 .id(idea.getId())

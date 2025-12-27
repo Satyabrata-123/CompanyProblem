@@ -4,6 +4,7 @@ com\innovation\company\entity\Challenge.class
 com\innovation\company\entity\Company$CompanyBuilder.class
 com\innovation\company\entity\Company.class
 com\innovation\company\repository\IntermediateChallengeRepository.class
+com\innovation\company\service\DifficultyBasedChallengeService$1.class
 com\innovation\company\entity\IntermediateChallenge$IntermediateChallengeBuilder.class
 com\innovation\company\repository\CompanyRepository.class
 com\innovation\company\entity\ChallengeIdea$IdeaStatus.class
@@ -11,6 +12,7 @@ com\innovation\company\entity\Challenge$DifficultyLevel.class
 com\innovation\company\entity\ChallengeIdea$ChallengeIdeaBuilder.class
 com\innovation\company\controller\ChallengeController.class
 com\innovation\company\repository\ChallengeIdeaRepository.class
+com\innovation\company\config\KafkaConfig.class
 com\innovation\company\entity\BeginnerChallenge.class
 com\innovation\company\entity\ExpertChallenge$ExpertChallengeBuilder.class
 com\innovation\company\controller\CompanyController.class
@@ -20,6 +22,7 @@ com\innovation\company\entity\Challenge$ChallengeBuilder.class
 com\innovation\company\entity\ExpertChallenge.class
 com\innovation\company\service\CompanyService.class
 com\innovation\company\repository\BeginnerChallengeRepository.class
+com\innovation\company\kafka\IdeaEventProducer.class
 com\innovation\company\entity\ChallengeIdea$ChallengeDifficulty.class
 com\innovation\company\service\DifficultyBasedChallengeService.class
 com\innovation\company\entity\IntermediateChallenge.class

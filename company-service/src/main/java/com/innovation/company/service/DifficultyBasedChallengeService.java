@@ -13,11 +13,13 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import com.innovation.common.dto.ChallengeDTO;
 import com.innovation.common.dto.ChallengeIdeaDTO;
+import com.innovation.common.event.IdeaSubmittedEvent;
 import com.innovation.company.entity.BeginnerChallenge;
 import com.innovation.company.entity.ChallengeIdea;
 import com.innovation.company.entity.Company;
 import com.innovation.company.entity.ExpertChallenge;
 import com.innovation.company.entity.IntermediateChallenge;
+import com.innovation.company.kafka.IdeaEventProducer;
 import com.innovation.company.repository.BeginnerChallengeRepository;
 import com.innovation.company.repository.ChallengeIdeaRepository;
 import com.innovation.company.repository.CompanyRepository;
@@ -36,6 +38,7 @@ public class DifficultyBasedChallengeService {
     private final ChallengeIdeaRepository challengeIdeaRepository;
     private final CompanyRepository companyRepository;
     private final WebClient.Builder webClientBuilder;
+    private final IdeaEventProducer ideaEventProducer;
 
     public ChallengeDTO createChallenge(ChallengeDTO challengeDTO, String internalSolutionBrief) {
         Company company = companyRepository.findById(challengeDTO.getCompanyId())
@@ -261,37 +264,36 @@ public class DifficultyBasedChallengeService {
             ChallengeIdea saved = challengeIdeaRepository.save(idea);
             System.out.println("Challenge idea saved successfully with ID: " + saved.getId());
             
-            // Only increment challenge submission count for actual challenges, not community ideas
+            // Only increment challenge submission count and publish to Kafka for actual challenges
             if (!"COMMUNITY".equals(ideaDTO.getChallengeDifficulty()) && ideaDTO.getChallengeId() != null) {
                 incrementChallengeSubmissions(ideaDTO.getChallengeId(), ideaDTO.getChallengeDifficulty());
                 
-                // Compare idea with company solution using AI
+                // Publish event to Kafka for async AI comparison
                 try {
-                    Map<String, Object> comparisonResult = compareIdeaWithSolution(saved, ideaDTO);
+                    ChallengeDTO challenge = getChallengeById(saved.getChallengeId(), ideaDTO.getChallengeDifficulty());
+                    String companySolution = getChallengeSolution(saved.getChallengeId(), ideaDTO.getChallengeDifficulty());
                     
-                    // Update the saved idea with AI comparison results
-                    if (comparisonResult != null && comparisonResult.containsKey("matchScore")) {
-                        Double matchScore = ((Number) comparisonResult.get("matchScore")).doubleValue();
-                        String feedback = (String) comparisonResult.get("feedback");
-                        Boolean isCorrect = (Boolean) comparisonResult.get("isCorrectSolution");
-                        
-                        // Update company score based on AI match score
-                        saved.setCompanyScore(matchScore.intValue());
-                        saved.setCompanyFeedback(feedback);
-                        
-                        // Update status based on match quality
-                        if (isCorrect != null && isCorrect) {
-                            saved.setStatus(ChallengeIdea.IdeaStatus.ACCEPTED);
-                        } else if (matchScore >= 40) {
-                            saved.setStatus(ChallengeIdea.IdeaStatus.UNDER_REVIEW);
-                        }
-                        
-                        saved = challengeIdeaRepository.save(saved);
-                        System.out.println("Updated idea with AI comparison - Score: " + matchScore);
-                    }
+                    IdeaSubmittedEvent event = IdeaSubmittedEvent.builder()
+                            .ideaId(saved.getId())
+                            .challengeId(saved.getChallengeId())
+                            .challengeDifficulty(saved.getChallengeDifficulty().name())
+                            .userId(saved.getUserId())
+                            .ideaTitle(saved.getTitle())
+                            .ideaDescription(buildFullIdeaDescription(saved))
+                            .solutionApproach(saved.getSolutionApproach())
+                            .technicalDetails(saved.getTechnicalDetails())
+                            .implementationPlan(saved.getImplementationPlan())
+                            .challengeTitle(challenge.getTitle())
+                            .challengeDescription(challenge.getDescription())
+                            .companySolution(companySolution)
+                            .build();
+                    
+                    ideaEventProducer.publishIdeaSubmitted(event);
+                    System.out.println("✅ Published idea to Kafka for AI comparison");
+                    
                 } catch (Exception e) {
-                    System.err.println("AI comparison failed, continuing without it: " + e.getMessage());
-                    // Don't fail the submission if AI comparison fails
+                    System.err.println("⚠️ Failed to publish to Kafka, but idea is saved: " + e.getMessage());
+                    // Don't fail the submission if Kafka publish fails
                 }
             }
             

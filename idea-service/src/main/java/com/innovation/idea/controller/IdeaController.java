@@ -79,4 +79,22 @@ public class IdeaController {
         ideaService.updateAiScore(id, score);
         return ResponseEntity.ok().build();
     }
+
+    @PutMapping("/{id}/comparison-result")
+    public ResponseEntity<IdeaDTO> updateComparisonResult(
+            @PathVariable UUID id,
+            @RequestBody ComparisonResultRequest request) {
+        IdeaDTO updated = ideaService.updateComparisonResult(id, request);
+        return ResponseEntity.ok(updated);
+    }
+
+    // DTO for comparison result
+    public static class ComparisonResultRequest {
+        public Double matchScore;
+        public String matchLevel;
+        public Boolean isCorrectSolution;
+        public String feedback;
+        public String strengths;
+        public String improvements;
+    }
 }

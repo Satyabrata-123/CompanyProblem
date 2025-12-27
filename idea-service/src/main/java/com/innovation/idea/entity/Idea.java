@@ -56,6 +56,24 @@ public class Idea {
     @Column
     private String tags;
 
+    // AI Comparison fields
+    @Column(name = "match_score")
+    private Double matchScore;
+
+    @Column(name = "match_level", length = 50)
+    private String matchLevel;
+
+    @Column(name = "is_correct_solution")
+    private Boolean isCorrectSolution;
+
+    @Column(name = "ai_feedback", columnDefinition = "TEXT")
+    private String aiFeedback;
+
+    @Column(name = "ai_strengths", columnDefinition = "TEXT")
+    private String aiStrengths;
+
+    @Column(name = "ai_improvements", columnDefinition = "TEXT")
+    private String aiImprovements;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

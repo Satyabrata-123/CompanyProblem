@@ -384,6 +384,14 @@ export class SubmitIdeaPage {
                 <h2>🎉 Idea Submitted Successfully!</h2>
                 <p>Your solution has been submitted and is now being analyzed...</p>
                 
+                <!-- Progress Bar -->
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <div class="progress-text" id="progress-text">25% Complete - Idea Submitted</div>
+                </div>
+                
                 <div class="analysis-steps">
                     <div class="step active">
                         <div class="step-icon">✅</div>
@@ -415,6 +423,9 @@ export class SubmitIdeaPage {
                 </div>
             </div>
         `;
+
+        // Start progress animation
+        this.animateProgress(25);
     }
 
     updatePendingState(message) {
@@ -423,11 +434,43 @@ export class SubmitIdeaPage {
             pendingMessage.textContent = message;
         }
 
-        // Update step indicators
+        // Update step indicators and progress
         if (message.includes('analyzing')) {
             this.activateStep('ai-analysis-step');
+            this.updateProgress(50, '50% Complete - AI Analyzing...');
         } else if (message.includes('rewards') || message.includes('credits')) {
             this.activateStep('scoring-step');
+            this.updateProgress(75, '75% Complete - Calculating Rewards...');
+        }
+    }
+
+    animateProgress(targetPercent) {
+        const progressFill = document.getElementById('progress-fill');
+        const progressText = document.getElementById('progress-text');
+
+        if (!progressFill || !progressText) return;
+
+        let currentPercent = 0;
+        const increment = targetPercent / 20; // Smooth animation
+
+        const interval = setInterval(() => {
+            currentPercent += increment;
+            if (currentPercent >= targetPercent) {
+                currentPercent = targetPercent;
+                clearInterval(interval);
+            }
+
+            progressFill.style.width = currentPercent + '%';
+        }, 50);
+    }
+
+    updateProgress(percent, text) {
+        const progressFill = document.getElementById('progress-fill');
+        const progressText = document.getElementById('progress-text');
+
+        if (progressFill && progressText) {
+            this.animateProgress(percent);
+            progressText.textContent = text;
         }
     }
 
@@ -439,9 +482,10 @@ export class SubmitIdeaPage {
     }
 
     showSuccessMessage(idea, comparisonResult = null, creditsAwarded = 0) {
-        // Activate final steps
+        // Activate final steps and complete progress
         this.activateStep('scoring-step');
         this.activateStep('results-step');
+        this.updateProgress(100, '100% Complete - Analysis Finished!');
 
         const container = document.querySelector('.submit-idea-container');
         const isIdeaBasedSubmission = this.isIdeaBasedSubmission;
@@ -827,6 +871,72 @@ const submitIdeaCSS = `
     100% { transform: rotate(360deg); }
 }
 
+.progress-container {
+    margin: 30px auto;
+    max-width: 600px;
+    width: 100%;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 30px;
+    background: #e2e8f0;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+    position: relative;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #667eea 100%);
+    background-size: 200% 100%;
+    border-radius: 15px;
+    transition: width 0.5s ease;
+    animation: shimmer 2s infinite;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255,255,255,0.3) 50%, 
+        transparent 100%);
+    animation: progress-shine 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+@keyframes progress-shine {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.progress-text {
+    text-align: center;
+    margin-top: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #667eea;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
 .analysis-steps {
     display: flex;
     justify-content: center;
@@ -1174,6 +1284,78 @@ const submitIdeaCSS = `
     .login-actions {
         flex-direction: column;
         align-items: center;
+    }
+    
+    .progress-container {
+        padding: 0 10px;
+    }
+    
+    .progress-bar {
+        height: 25px;
+    }
+    
+    .progress-text {
+        font-size: 12px;
+    }
+    
+    .pending-analysis {
+        padding: 40px 20px;
+    }
+    
+    .pending-analysis h2 {
+        font-size: 22px;
+    }
+    
+    .score-circle {
+        width: 120px;
+        height: 120px;
+        border-width: 6px;
+    }
+    
+    .score-number {
+        font-size: 36px;
+    }
+    
+    .score-label {
+        font-size: 14px;
+    }
+    
+    .match-level {
+        font-size: 18px;
+    }
+    
+    .credits-amount {
+        font-size: 36px;
+    }
+}
+
+@media (max-width: 480px) {
+    .progress-bar {
+        height: 20px;
+    }
+    
+    .progress-text {
+        font-size: 11px;
+    }
+    
+    .step {
+        padding: 15px 10px;
+    }
+    
+    .step-icon {
+        font-size: 20px;
+        width: 35px;
+        height: 35px;
+    }
+    
+    .step-text {
+        font-size: 11px;
+    }
+    
+    .spinner {
+        width: 50px;
+        height: 50px;
+        border-width: 5px;
     }
 }
 `;

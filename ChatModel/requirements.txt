@@ -5,4 +5,5 @@ google-genai==0.3.0
 requests==2.31.0
 asyncio
 langchain-google-genai==2.0.5
-psutil==5.9.8
+psutil==5.9.8kafka-
+python==2.0.2

@@ -1,6 +1,10 @@
 com\innovation\common\dto\SolutionDTO.class
+com\innovation\common\event\IdeaSubmittedEvent.class
+com\innovation\common\event\AiComparisonResultEvent$AiComparisonResultEventBuilder.class
 com\innovation\common\dto\ChallengeDTO$ChallengeDTOBuilder.class
 com\innovation\common\dto\VoteDTO.class
+com\innovation\common\event\IdeaSubmittedEvent$IdeaSubmittedEventBuilder.class
+com\innovation\common\event\AiComparisonResultEvent.class
 com\innovation\common\dto\CompanyDTO.class
 com\innovation\common\dto\IdeaDTO.class
 com\innovation\common\dto\CommentDTO$CommentDTOBuilder.class

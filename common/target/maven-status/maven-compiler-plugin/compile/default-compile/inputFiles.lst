@@ -3,7 +3,9 @@ D:\COMPANY_PROBLEM\common\src\main\java\com\innovation\common\dto\UserDTO.java
 D:\COMPANY_PROBLEM\common\src\main\java\com\innovation\common\enums\IdeaStatus.java
 D:\COMPANY_PROBLEM\common\src\main\java\com\innovation\common\dto\CommentDTO.java
 D:\COMPANY_PROBLEM\common\src\main\java\com\innovation\common\dto\IdeaDTO.java
+D:\COMPANY_PROBLEM\common\src\main\java\com\innovation\common\event\IdeaSubmittedEvent.java
 D:\COMPANY_PROBLEM\common\src\main\java\com\innovation\common\dto\SolutionDTO.java
 D:\COMPANY_PROBLEM\common\src\main\java\com\innovation\common\dto\CompanyDTO.java
+D:\COMPANY_PROBLEM\common\src\main\java\com\innovation\common\event\AiComparisonResultEvent.java
 D:\COMPANY_PROBLEM\common\src\main\java\com\innovation\common\dto\ChallengeDTO.java
 D:\COMPANY_PROBLEM\common\src\main\java\com\innovation\common\dto\ChallengeIdeaDTO.java

@@ -58,5 +58,11 @@
             <scope>runtime</scope>
             <optional>true</optional>
         </dependency>
+        
+        <!-- Kafka -->
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
+        </dependency>
     </dependencies>
 </project>

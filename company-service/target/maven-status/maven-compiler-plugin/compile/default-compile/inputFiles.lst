@@ -4,6 +4,7 @@ D:\COMPANY_PROBLEM\company-service\src\main\java\com\innovation\company\service\
 D:\COMPANY_PROBLEM\company-service\src\main\java\com\innovation\company\CompanyServiceApplication.java
 D:\COMPANY_PROBLEM\company-service\src\main\java\com\innovation\company\controller\ChallengeController.java
 D:\COMPANY_PROBLEM\company-service\src\main\java\com\innovation\company\entity\ChallengeIdea.java
+D:\COMPANY_PROBLEM\company-service\src\main\java\com\innovation\company\kafka\IdeaEventProducer.java
 D:\COMPANY_PROBLEM\company-service\src\main\java\com\innovation\company\repository\BeginnerChallengeRepository.java
 D:\COMPANY_PROBLEM\company-service\src\main\java\com\innovation\company\repository\ChallengeRepository.java
 D:\COMPANY_PROBLEM\company-service\src\main\java\com\innovation\company\entity\BeginnerChallenge.java
@@ -11,6 +12,7 @@ D:\COMPANY_PROBLEM\company-service\src\main\java\com\innovation\company\reposito
 D:\COMPANY_PROBLEM\company-service\src\main\java\com\innovation\company\repository\ExpertChallengeRepository.java
 D:\COMPANY_PROBLEM\company-service\src\main\java\com\innovation\company\entity\Challenge.java
 D:\COMPANY_PROBLEM\company-service\src\main\java\com\innovation\company\entity\Company.java
+D:\COMPANY_PROBLEM\company-service\src\main\java\com\innovation\company\config\KafkaConfig.java
 D:\COMPANY_PROBLEM\company-service\src\main\java\com\innovation\company\service\CompanyService.java
 D:\COMPANY_PROBLEM\company-service\src\main\java\com\innovation\company\entity\IntermediateChallenge.java
 D:\COMPANY_PROBLEM\company-service\src\main\java\com\innovation\company\entity\ExpertChallenge.java
