@@ -1,5 +1,10 @@
-node_modules
-.env
-*.jar
-target/
-*/target/
+# Maven build output (all services)
+**/target/
+
+# Optional: logs
+**/*.log
+
+# IDE files
+.idea/
+.vscode/
+*.iml
