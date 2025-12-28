@@ -1,12 +1,16 @@
-# Maven build output (all services)
-**/target/
+# Maven build output
+/target/
 
-# Optional: logs
-**/*.log
+# Environment variables
+.env
+
+# Properties files (ALL .properties files will be ignored)
+*.properties
+
+# Logs
+*.log
 
 # IDE files
 .idea/
 .vscode/
 *.iml
-.properties
-.env
