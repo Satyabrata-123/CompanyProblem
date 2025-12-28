@@ -225,7 +225,7 @@ export default async function DashboardPage() {
                   <span class="mr-2">🎯</span>
                   Browse Challenges
                 </a>
-                <a href="#/company/dashboard" class="btn-success w-full flex items-center justify-center">
+                <a href="#/company/Dashboard" class="btn-success w-full flex items-center justify-center">
                   <span class="mr-2">🏢</span>
                   Company Dashboard
                 </a>
@@ -272,7 +272,7 @@ export default async function DashboardPage() {
                       </div>
                     </div>
                   `).join('') :
-                  '<p class="text-gray-500 text-sm text-center py-4">No challenges yet. <a href="#/company/dashboard" class="text-primary-600 hover:text-primary-500">Create one as a company!</a></p>'
+                  '<p class="text-gray-500 text-sm text-center py-4">No challenges yet. <a href="#/company/Dashboard" class="text-primary-600 hover:text-primary-500">Create one as a company!</a></p>'
                 }
               </div>
             </div>

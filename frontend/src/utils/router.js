@@ -8,6 +8,7 @@ export class Router {
     this.appContainer = null
     this.isNavigating = false
     this.routeHistory = []
+    this.currentPageInstance = null
   }
 
   configure(routes) {
@@ -26,32 +27,33 @@ export class Router {
   start() {
     // Listen for hash changes
     window.addEventListener('hashchange', () => this.handleRoute())
-    window.addEventListener('load', () => this.handleRoute())
     
     // Handle browser back/forward buttons
     window.addEventListener('popstate', () => this.handleRoute())
-    
-    // Handle initial route
+
+    // Handle initial route immediately (not on load event)
     this.handleRoute()
   }
 
   async handleRoute() {
     if (this.isNavigating) return
-    
+
     const hash = window.location.hash.slice(1) || '/'
     const route = this.matchRoute(hash)
-    
+
+    console.log('Router: Handling route:', hash, 'Matched:', !!route)
+
     // Prevent duplicate navigation
     if (hash === this.currentRoute) return
-    
+
     this.isNavigating = true
-    
+
     try {
       // Run beforeEach hook
       if (this.beforeEachHook) {
         let shouldProceed = false
         let redirectPath = null
-        
+
         const next = (path) => {
           if (path && path !== hash) {
             redirectPath = path
@@ -59,15 +61,15 @@ export class Router {
             shouldProceed = true
           }
         }
-        
+
         await this.beforeEachHook(hash, this.currentRoute, next)
-        
+
         if (redirectPath) {
           this.isNavigating = false
           this.navigate(redirectPath)
           return
         }
-        
+
         if (!shouldProceed) {
           this.isNavigating = false
           return
@@ -78,44 +80,44 @@ export class Router {
         try {
           // Show loading state with transition
           this.showLoading()
-          
+
           // Load the route component
           const module = await route.handler()
           const component = module.default || module
-          
+
           if (typeof component === 'function') {
             // Store previous route for history
             this.previousRoute = this.currentRoute
             this.currentRoute = hash
-            
+
             // Add to history
             this.routeHistory.push({
               path: hash,
               timestamp: Date.now(),
               params: route.params
             })
-            
+
             // Keep history limited
             if (this.routeHistory.length > 50) {
               this.routeHistory = this.routeHistory.slice(-25)
             }
-            
+
             // Render component with transition
             await this.renderComponent(component, route.params)
-            
+
             // Run afterEach hook
             if (this.afterEachHook) {
               this.afterEachHook(hash, this.previousRoute)
             }
-            
+
             // Update page title
             this.updatePageTitle(hash)
-            
+
           } else {
             console.error('Route handler must export a function')
             this.showError('Invalid route configuration')
           }
-          
+
         } catch (error) {
           console.error('Error loading route:', error)
           this.showError('Failed to load page. Please try again.')
@@ -130,55 +132,74 @@ export class Router {
 
   matchRoute(path) {
     // Simple route matching with parameters
+    console.log('Router: Matching path:', path, 'Available routes:', Object.keys(this.routes))
+
     for (const [pattern, handler] of Object.entries(this.routes)) {
       const regex = pattern.replace(/:\w+/g, '([^/]+)')
       const match = path.match(new RegExp(`^${regex}$`))
-      
+
+      console.log('Router: Testing pattern:', pattern, 'Regex:', `^${regex}$`, 'Match:', !!match)
+
       if (match) {
         const paramNames = pattern.match(/:(\w+)/g) || []
         const params = {}
-        
+
         paramNames.forEach((param, index) => {
           const paramName = param.slice(1)
           params[paramName] = match[index + 1]
         })
-        
+
+        console.log('Router: Route matched!', pattern, 'Params:', params)
         return { handler, params }
       }
     }
-    
+
+    console.log('Router: No route matched for:', path)
     return null
   }
 
   async renderComponent(component, params = {}) {
     if (this.appContainer) {
+      // Clean up previous page instance
+      if (this.currentPageInstance && typeof this.currentPageInstance.destroy === 'function') {
+        try {
+          this.currentPageInstance.destroy()
+        } catch (error) {
+          console.warn('Error destroying previous page:', error)
+        }
+      }
+      this.currentPageInstance = null
+      
+      // Clear container immediately
+      this.appContainer.innerHTML = ''
+      
       // Add fade out transition
       this.appContainer.style.opacity = '0'
       this.appContainer.style.transition = 'opacity 0.15s ease-out'
-      
+
       // Small delay for smooth transition
       await new Promise(resolve => setTimeout(resolve, 150))
-      
+
       try {
         const content = await component(params)
         this.appContainer.innerHTML = content
-        
+
         // Fade in new content
         this.appContainer.style.opacity = '1'
-        
+
         // Trigger any post-render initialization
-        const event = new CustomEvent('routeRendered', { 
-          detail: { 
-            params, 
+        const event = new CustomEvent('routeRendered', {
+          detail: {
+            params,
             route: this.currentRoute,
-            previousRoute: this.previousRoute 
-          } 
+            previousRoute: this.previousRoute
+          }
         })
         document.dispatchEvent(event)
-        
+
         // Initialize any interactive elements
         this.initializePageInteractions()
-        
+
       } catch (error) {
         console.error('Error rendering component:', error)
         this.showError('Failed to render page content')
@@ -235,21 +256,21 @@ export class Router {
       '/ideas/new': 'Submit Idea - Innovation Platform',
       '/challenges': 'Challenges - Innovation Platform',
       '/challenges/submit': 'Submit Solution - Innovation Platform',
-      '/company/dashboard': 'Company Dashboard - Innovation Platform',
+      '/company/Dashboard': 'Company Dashboard - Innovation Platform',
       '/company/register': 'Register Company - Innovation Platform',
       '/company/challenges/create': 'Create Challenge - Innovation Platform',
       '/profile': 'Profile - Innovation Platform',
       '/leaderboard': 'Leaderboard - Innovation Platform',
       '/admin': 'Admin Dashboard - Innovation Platform'
     }
-    
+
     document.title = routeTitles[route] || 'Innovation Platform'
   }
 
   initializePageInteractions() {
     // Initialize any common page interactions
     // This will be called after each route render
-    
+
     // Initialize tooltips, dropdowns, etc.
     this.initializeDropdowns()
     this.initializeModals()
@@ -261,13 +282,13 @@ export class Router {
     dropdowns.forEach(dropdown => {
       const trigger = dropdown.querySelector('[data-dropdown-trigger]')
       const menu = dropdown.querySelector('[data-dropdown-menu]')
-      
+
       if (trigger && menu) {
         trigger.addEventListener('click', (e) => {
           e.stopPropagation()
           menu.classList.toggle('hidden')
         })
-        
+
         // Close on outside click
         document.addEventListener('click', () => {
           menu.classList.add('hidden')
@@ -309,7 +330,7 @@ export class Router {
       form.addEventListener('submit', async (e) => {
         e.preventDefault()
         const formType = form.getAttribute('data-form')
-        
+
         // Handle different form types
         switch (formType) {
           case 'login':
@@ -332,7 +353,7 @@ export class Router {
   async handleLoginForm(form) {
     const formData = new FormData(form)
     const email = formData.get('email')
-    
+
     try {
       const user = await window.app.api.getUserByEmail(email)
       window.app.state.setUser(user)
@@ -357,7 +378,7 @@ export class Router {
       department: formData.get('department'),
       role: formData.get('role')
     }
-    
+
     try {
       const user = await window.app.api.createUser(userData)
       window.app.state.setUser(user)
@@ -377,22 +398,22 @@ export class Router {
   async handleIdeaSubmitForm(form) {
     const formData = new FormData(form)
     const currentUser = window.app.state.getState('user').currentUser
-    
+
     const ideaData = {
       title: formData.get('title'),
       description: formData.get('description'),
       submittedBy: currentUser.id
     }
-    
+
     try {
       const idea = await window.app.api.createIdea(ideaData)
-      
+
       // Award points for idea submission
       await window.app.api.awardPointsForIdeaSubmission(currentUser.id)
-      
+
       // Trigger AI categorization
       await window.app.api.categorizeIdea(ideaData)
-      
+
       window.app.state.addIdea(idea)
       window.app.state.addNotification({
         type: 'success',
@@ -411,25 +432,25 @@ export class Router {
     const formData = new FormData(form)
     const currentUser = window.app.state.getState('user').currentUser
     const ideaId = form.getAttribute('data-idea-id')
-    
+
     const commentData = {
       ideaId: ideaId,
       userId: currentUser.id,
       userName: currentUser.fullName,
       content: formData.get('content')
     }
-    
+
     try {
       await window.app.api.addComment(commentData)
-      
+
       // Award points for comment
       await window.app.api.awardPointsForComment(currentUser.id)
-      
+
       window.app.state.addNotification({
         type: 'success',
         message: 'Comment added successfully!'
       })
-      
+
       // Refresh the current page to show new comment
       this.handleRoute()
     } catch (error) {

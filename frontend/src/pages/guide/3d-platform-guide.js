@@ -182,24 +182,23 @@ class ThreeDPlatformGuide {
 
     async loadCompanies() {
         try {
-            const companies = await window.app.api.getAllCompanies();
-            this.companies = companies.filter(company => company.isVerified).slice(0, 12);
+            const allCompanies = await window.app.api.getAllCompanies();
+            console.log('Loaded companies:', allCompanies);
             
-            if (this.companies.length === 0) {
-                // Fallback companies
-                this.companies = [
-                    { name: 'TechCorp Solutions', industry: 'Technology', description: 'Leading AI solutions' },
-                    { name: 'InnovateLab', industry: 'Research', description: 'Innovation laboratory' },
-                    { name: 'CyberSecure Inc', industry: 'Security', description: 'Cybersecurity experts' },
-                    { name: 'GreenTech Pro', industry: 'Clean Tech', description: 'Sustainable solutions' },
-                    { name: 'HealthTech Plus', industry: 'Healthcare', description: 'Digital health' },
-                    { name: 'FinanceFlow', industry: 'FinTech', description: 'Financial innovation' },
-                    { name: 'DataDriven AI', industry: 'Data Science', description: 'AI & Analytics' },
-                    { name: 'CloudFirst Systems', industry: 'Cloud', description: 'Cloud solutions' }
-                ];
+            // Filter verified companies first
+            const verifiedCompanies = allCompanies.filter(company => company.isVerified);
+            
+            if (verifiedCompanies.length > 0) {
+                this.companies = verifiedCompanies.slice(0, 12);
+            } else {
+                // If no verified companies, show all active companies
+                this.companies = allCompanies.filter(company => company.isActive).slice(0, 12);
             }
+            
+            console.log('Displaying companies:', this.companies.length);
         } catch (error) {
             console.error('Failed to load companies:', error);
+            // Fallback companies only if API fails
             this.companies = [
                 { name: 'TechCorp Solutions', industry: 'Technology', description: 'Leading AI solutions' },
                 { name: 'InnovateLab', industry: 'Research', description: 'Innovation laboratory' },
@@ -370,7 +369,7 @@ class ThreeDPlatformGuide {
 
         if (backToDashboardBtn) {
             backToDashboardBtn.addEventListener('click', () => {
-                window.app.router.navigate('/dashboard');
+                window.app.router.navigate('/Dashboard');
             });
         }
     }

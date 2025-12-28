@@ -117,6 +117,24 @@ export default function SubmitIdeaPage() {
                 </div>
               </div>
 
+              <div>
+                <label for="companyId" class="block text-sm font-medium text-gray-700 mb-2">
+                  Select Company *
+                </label>
+                <select 
+                  id="companyId" 
+                  name="companyId" 
+                  required 
+                  class="input"
+                >
+                  <option value="">-- Select a company --</option>
+                </select>
+                <div class="text-sm text-danger-600 hidden mt-1" id="companyError"></div>
+                <p class="mt-1 text-sm text-gray-500">
+                  Choose the company you want to submit this idea to
+                </p>
+              </div>
+
               <div class="flex items-center justify-between pt-4">
                 <div class="flex items-center space-x-4">
                   <button type="button" onclick="loadDraft()" class="text-primary-600 hover:text-primary-500 text-sm font-medium">
@@ -248,6 +266,7 @@ function initializeSubmitIdeaForm() {
   const form = document.getElementById('submitIdeaForm')
   const titleInput = document.getElementById('title')
   const descriptionInput = document.getElementById('description')
+  const companySelect = document.getElementById('companyId')
   const titleCount = document.getElementById('titleCount')
   const descriptionCount = document.getElementById('descriptionCount')
   const nextStepBtn = document.getElementById('nextStepBtn')
@@ -256,6 +275,33 @@ function initializeSubmitIdeaForm() {
   let aiAnalysisData = null
   let duplicateCheckResults = null
   let submissionToken = null
+
+  // Load companies
+  loadCompanies()
+
+  async function loadCompanies() {
+    try {
+      const companies = await window.app.api.getAllCompanies()
+      const activeCompanies = companies.filter(c => c.isActive && c.isVerified)
+      
+      companySelect.innerHTML = '<option value="">-- Select a company --</option>'
+      activeCompanies.forEach(company => {
+        const option = document.createElement('option')
+        option.value = company.id
+        option.textContent = `${company.name} - ${company.industry}`
+        companySelect.appendChild(option)
+      })
+      
+      if (activeCompanies.length === 0) {
+        companySelect.innerHTML = '<option value="">No companies available</option>'
+        companySelect.disabled = true
+      }
+    } catch (error) {
+      console.error('Failed to load companies:', error)
+      companySelect.innerHTML = '<option value="">Error loading companies</option>'
+      companySelect.disabled = true
+    }
+  }
 
   // Character counters
   titleInput.addEventListener('input', () => {
@@ -272,9 +318,16 @@ function initializeSubmitIdeaForm() {
     updateNextStepButton()
   })
 
+  // Company selection validation
+  companySelect.addEventListener('change', () => {
+    validateField('companyId', companySelect.value)
+    updateNextStepButton()
+  })
+
   // Real-time validation
   titleInput.addEventListener('blur', () => validateField('title', titleInput.value))
   descriptionInput.addEventListener('blur', () => validateField('description', descriptionInput.value))
+  companySelect.addEventListener('blur', () => validateField('companyId', companySelect.value))
 
   // Auto-save draft every 30 seconds
   setInterval(() => {
@@ -441,6 +494,13 @@ function initializeSubmitIdeaForm() {
           isValid = false
         }
         break
+
+      case 'companyId':
+        if (!value) {
+          errorMessage = 'Please select a company'
+          isValid = false
+        }
+        break
     }
 
     if (isValid) {
@@ -455,11 +515,14 @@ function initializeSubmitIdeaForm() {
   function validateForm() {
     const titleValid = validateField('title', titleInput.value)
     const descriptionValid = validateField('description', descriptionInput.value)
-    return titleValid && descriptionValid
+    const companyValid = validateField('companyId', companySelect.value)
+    return titleValid && descriptionValid && companyValid
   }
 
   function updateNextStepButton() {
-    const isValid = titleInput.value.trim().length >= 5 && descriptionInput.value.trim().length >= 20
+    const isValid = titleInput.value.trim().length >= 5 && 
+                    descriptionInput.value.trim().length >= 20 &&
+                    companySelect.value
     nextStepBtn.disabled = !isValid
 
     if (isValid) {
@@ -959,7 +1022,7 @@ function initializeSubmitIdeaForm() {
           <button class="btn-secondary-custom" onclick="window.app.router.navigate('/ideas')">
             Browse All Ideas
           </button>
-          <button class="btn-secondary-custom" onclick="window.app.router.navigate('/dashboard')">
+          <button class="btn-secondary-custom" onclick="window.app.router.navigate('/Dashboard')">
             Go to Dashboard
           </button>
         </div>

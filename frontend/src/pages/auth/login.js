@@ -99,7 +99,7 @@ function initializeLoginForm() {
 
   function validateEmail(email) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    
+
     if (!email) {
       showFieldError('email', 'Email is required')
       return false
@@ -115,7 +115,7 @@ function initializeLoginForm() {
   function showFieldError(fieldName, message) {
     const errorElement = document.getElementById(`${fieldName}Error`)
     const inputElement = document.getElementById(fieldName)
-    
+
     if (errorElement && inputElement) {
       errorElement.textContent = message
       errorElement.classList.remove('hidden')
@@ -127,7 +127,7 @@ function initializeLoginForm() {
   function hideFieldError(fieldName) {
     const errorElement = document.getElementById(`${fieldName}Error`)
     const inputElement = document.getElementById(fieldName)
-    
+
     if (errorElement && inputElement) {
       errorElement.textContent = ''
       errorElement.classList.add('hidden')
@@ -161,11 +161,11 @@ function initializeLoginForm() {
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault()
-    
+
     hideLoginError()
-    
+
     const email = emailInput.value.trim()
-    
+
     // Validate form
     if (!validateEmail(email)) {
       return
@@ -175,14 +175,29 @@ function initializeLoginForm() {
 
     try {
       const user = await window.app.api.users.authenticateUser(email)
-      
+
+      // Store user in state
+      window.app.state.setState('user', {
+        currentUser: user,
+        isAuthenticated: true,
+        loading: false
+      })
+
+      // Store in localStorage
+      localStorage.setItem('innovation_user', JSON.stringify(user))
+
       window.app.state.addNotification({
         type: 'success',
         message: `Welcome back, ${user.fullName}!`
       })
+
+      // Check if there's a redirect destination stored
+      const redirectTo = sessionStorage.getItem('redirectAfterLogin');
+      sessionStorage.removeItem('redirectAfterLogin');
       
-      window.app.router.navigate('/')
-      
+      // Redirect to stored destination or landing page
+      window.location.hash = redirectTo ? `#${redirectTo}` : '#/'
+
     } catch (error) {
       console.error('Login error:', error)
       showLoginError(error.message || 'Login failed. Please try again.')

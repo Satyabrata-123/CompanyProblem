@@ -105,7 +105,7 @@
 
                     ┌─────────────────────────────┐
                     │   Google Gemini AI          │
-                    │   Model: gemini-2.0-flash   │
+                    │   Model: gemini-2.5-flash   │
                     │                             │
                     │ - Intelligent Comparison    │
                     │ - Context Understanding     │
@@ -211,7 +211,7 @@
                             ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                    Google Gemini AI                              │
-│                    Model: gemini-2.0-flash-exp                   │
+│                    Model: gemini-2.5-flash                       │
 │                                                                  │
 │  Analyzes:                                                      │
 │  - Technical approach similarity                                │

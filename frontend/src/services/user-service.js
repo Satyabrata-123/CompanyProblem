@@ -120,16 +120,27 @@ export class UserService {
       // Store user in state
       window.app.state.setUser(user)
       
-      // Load user's additional data
-      const [userStats, userBadges] = await Promise.all([
-        this.getUserStats(user.id),
-        this.api.getUserBadges(user.id)
-      ])
-      
-      // Update gamification state
-      window.app.state.setState('gamification', {
-        userBadges: userBadges || []
-      })
+      // Load user's additional data (don't fail if these fail)
+      try {
+        const [userStats, userBadges] = await Promise.all([
+          this.getUserStats(user.id).catch(err => {
+            console.warn('Failed to load user stats:', err)
+            return { totalPoints: 0, ideasSubmitted: 0, ideasImplemented: 0, totalVotes: 0, recentIdeas: 0 }
+          }),
+          this.api.getUserBadges(user.id).catch(err => {
+            console.warn('Failed to load user badges:', err)
+            return []
+          })
+        ])
+        
+        // Update gamification state
+        window.app.state.setState('gamification', {
+          userBadges: userBadges || []
+        })
+      } catch (error) {
+        console.warn('Failed to load additional user data:', error)
+        // Continue anyway - authentication succeeded
+      }
       
       return user
     } catch (error) {

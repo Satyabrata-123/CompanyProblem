@@ -403,7 +403,7 @@ export class CompanyRegisterPage {
             this.showSuccessMessage();
             
             setTimeout(() => {
-                window.app.router.navigate('/company/dashboard');
+                window.app.router.navigate('/company/Dashboard');
             }, 3000);
 
         } catch (error) {

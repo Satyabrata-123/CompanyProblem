@@ -107,12 +107,14 @@ gemini_available = False
 if GEMINI_API_KEY:
     try:
         llm = ChatGoogleGenerativeAI(
-            model="gemini-2.0-flash-exp",
-            google_api_key=GEMINI_API_KEY
+            model="gemini-2.5-flash",  # Using Gemini 2.5 Flash model
+            google_api_key=GEMINI_API_KEY,
+            temperature=0.7,
+            max_tokens=2048
         )
         test_response = llm.invoke("Hello")
         gemini_available = True
-        logger.info("✅ Gemini AI configured successfully")
+        logger.info("✅ Gemini AI configured successfully with model: gemini-2.5-flash")
     except Exception as e:
         logger.warning(f"⚠️ Failed to initialize Gemini AI: {e}")
         gemini_available = False

@@ -131,7 +131,7 @@ export class ChallengesListPage {
                      <div class="empty-icon">📋</div>
                      <h3>No Challenges Available Yet</h3>
                      <p>There are currently no challenges in the system.</p>
-                     <button class="btn-3d primary" onclick="window.location.hash='#/company/dashboard'">
+                     <button class="btn-3d primary" onclick="window.location.hash='#/company/Dashboard'">
                        <span>Go to Company Dashboard</span>
                      </button>
                    </div>`

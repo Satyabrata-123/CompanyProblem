@@ -1,4 +1,5 @@
 import './styles/main.css'
+import './styles/landing-3d-hero.css'
 import { Router } from './utils/router.js'
 import { StateManager } from './utils/state-manager.js'
 import { ApiClient } from './services/api-client.js'
@@ -61,27 +62,27 @@ class App {
   }
 
   setupRouter() {
-    // Define routes
+    // Define routes (order matters - more specific routes first)
     const routes = {
-      '/': () => import('./pages/landing/landing-page.js'),
+      '/Dashboard': () => import('./pages/dashboard/dashboard.js'),
       '/3d-guide': () => import('./pages/guide/3d-platform-guide.js'),
-      '/dashboard': () => import('./pages/dashboard/dashboard.js'),
       '/login': () => import('./pages/auth/login.js'),
       '/register': () => import('./pages/auth/register.js'),
-      '/ideas': () => import('./pages/ideas/ideas-list.js'),
       '/ideas/new': () => import('./pages/ideas/submit-idea.js'),
       '/ideas/:id': () => import('./pages/ideas/idea-detail.js'),
-      '/challenges': () => import('./pages/challenges/challenges-list.js'),
-      '/challenges/:id': () => import('./pages/challenges/challenge-detail.js'),
-      '/challenges/:id/submit': () => import('./pages/challenges/submit-solution.js'),
+      '/ideas': () => import('./pages/ideas/ideas-list.js'),
       '/challenges/:difficulty/:challengeId/submit-idea': () => import('./pages/challenges/submit-idea.js'),
-      '/company/dashboard': () => import('./pages/company/company-dashboard-table.js'),
+      '/challenges/:id/submit': () => import('./pages/challenges/submit-solution.js'),
+      '/challenges/:id': () => import('./pages/challenges/challenge-detail.js'),
+      '/challenges': () => import('./pages/challenges/challenges-list.js'),
+      '/company/Dashboard': () => import('./pages/company/company-dashboard-table.js'),
       '/company/register': () => import('./pages/company/company-register.js'),
       '/company/challenges/create': () => import('./pages/company/create-challenge.js'),
       '/solutions/:id': () => import('./pages/solutions/solution-detail.js'),
       '/profile': () => import('./pages/profile/profile.js'),
       '/leaderboard': () => import('./pages/leaderboard/leaderboard.js'),
-      '/admin': () => import('./pages/admin/admin-dashboard.js')
+      '/admin': () => import('./pages/admin/admin-dashboard.js'),
+      '/': () => import('./pages/landing/landing-3d-hero.js')
     }
 
     // Configure router
@@ -90,13 +91,13 @@ class App {
     // Set up authentication guard
     window.app.router.beforeEach((to, from, next) => {
       const isAuthenticated = window.app.state.getState('user').isAuthenticated
-      const publicRoutes = ['/', '/login', '/register']
+      const publicRoutes = ['/', '/login', '/register', '/company/register', '/challenges', '/ideas', '/leaderboard']
 
       if (!isAuthenticated && !publicRoutes.includes(to)) {
+        // If trying to access protected route, redirect to login
         next('/login')
-      } else if (isAuthenticated && to === '/') {
-        next('/dashboard')
       } else {
+        // Allow navigation
         next()
       }
     })

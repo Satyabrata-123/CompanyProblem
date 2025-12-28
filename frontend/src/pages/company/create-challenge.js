@@ -10,7 +10,7 @@ export class CreateChallengePage {
             <div class="create-challenge-page">
                 <div class="create-container">
                     <div class="create-header">
-                        <button class="back-btn" onclick="window.app.router.navigate('/company/dashboard')">
+                        <button class="back-btn" onclick="window.app.router.navigate('/company/Dashboard')">
                             ← Back to Dashboard
                         </button>
                         <h1>Create New Challenge</h1>
@@ -123,7 +123,7 @@ export class CreateChallengePage {
                         </div>
 
                         <div class="form-actions">
-                            <button type="button" class="btn-cancel" onclick="window.app.router.navigate('/company/dashboard')">
+                            <button type="button" class="btn-cancel" onclick="window.app.router.navigate('/company/Dashboard')">
                                 Cancel
                             </button>
                             <button type="submit" class="btn-submit" id="submitBtn">
@@ -199,7 +199,7 @@ export class CreateChallengePage {
             this.showSuccessMessage();
 
             setTimeout(() => {
-                window.app.router.navigate('/company/dashboard');
+                window.app.router.navigate('/company/Dashboard');
             }, 3000);
 
         } catch (error) {

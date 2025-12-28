@@ -143,7 +143,7 @@ export class ChallengesListPage {
                      <h3>No Challenges Available Yet</h3>
                      <p>There are currently no challenges in the system.</p>
                      <p>Companies can create challenges from their dashboard.</p>
-                     <button class="btn-primary" onclick="window.location.hash='#/company/dashboard'">
+                     <button class="btn-primary" onclick="window.location.hash='#/company/Dashboard'">
                        Go to Company Dashboard
                      </button>
                    </div>`

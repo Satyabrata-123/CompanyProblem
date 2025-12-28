@@ -22,18 +22,30 @@ export class CompanyDashboardTablePage {
 
     async loadCompanyData() {
         try {
-            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-            if (!currentUser || !currentUser.companyId) {
+            // Load all companies first
+            const allCompanies = await window.app.api.getAllCompanies();
+            const activeCompanies = allCompanies.filter(c => c.isActive && c.isVerified);
+            
+            // Check if user has a selected company in localStorage
+            let selectedCompanyId = localStorage.getItem('selectedCompanyId');
+            
+            // If no company selected, show company selector
+            if (!selectedCompanyId && activeCompanies.length > 0) {
+                this.renderCompanySelector(activeCompanies);
+                return;
+            }
+            
+            if (!selectedCompanyId) {
                 this.renderNoCompany();
                 return;
             }
 
             // Load company details
-            const companyResponse = await window.app.api.get(`/companies/${currentUser.companyId}`);
+            const companyResponse = await window.app.api.get(`/companies/${selectedCompanyId}`);
             this.company = companyResponse.data || companyResponse;
 
             // Load company challenges
-            const challengesResponse = await window.app.api.get(`/challenges/company/${currentUser.companyId}`);
+            const challengesResponse = await window.app.api.get(`/challenges/company/${selectedCompanyId}`);
             this.challenges = challengesResponse.data || challengesResponse || [];
 
             this.renderDashboard();
@@ -64,6 +76,138 @@ export class CompanyDashboardTablePage {
         `;
     }
 
+    renderCompanySelector(companies) {
+        document.getElementById('dashboardContent').innerHTML = `
+            <div class="company-selector-container">
+                <div class="selector-card">
+                    <h2>Select Company to Manage</h2>
+                    <p>Choose which company dashboard you want to access</p>
+                    
+                    <div class="company-select-wrapper">
+                        <label for="companySelect">Select Company:</label>
+                        <select id="companySelect" class="company-dropdown">
+                            <option value="">-- Select a company --</option>
+                            ${companies.map(company => `
+                                <option value="${company.id}">
+                                    ${company.name} - ${company.industry}
+                                </option>
+                            `).join('')}
+                        </select>
+                    </div>
+                    
+                    <button class="btn-primary" id="selectCompanyBtn" disabled>
+                        Access Dashboard
+                    </button>
+                    
+                    <div class="or-divider">
+                        <span>OR</span>
+                    </div>
+                    
+                    <button class="btn-secondary" onclick="window.app.router.navigate('/company/register')">
+                        Register New Company
+                    </button>
+                </div>
+            </div>
+            
+            <style>
+                .company-selector-container {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    min-height: 60vh;
+                    padding: 2rem;
+                }
+                
+                .selector-card {
+                    background: white;
+                    border-radius: 12px;
+                    padding: 3rem;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                    max-width: 500px;
+                    width: 100%;
+                    text-align: center;
+                }
+                
+                .selector-card h2 {
+                    font-size: 1.75rem;
+                    margin-bottom: 0.5rem;
+                    color: #1f2937;
+                }
+                
+                .selector-card p {
+                    color: #6b7280;
+                    margin-bottom: 2rem;
+                }
+                
+                .company-select-wrapper {
+                    margin-bottom: 1.5rem;
+                    text-align: left;
+                }
+                
+                .company-select-wrapper label {
+                    display: block;
+                    font-weight: 500;
+                    margin-bottom: 0.5rem;
+                    color: #374151;
+                }
+                
+                .company-dropdown {
+                    width: 100%;
+                    padding: 0.75rem;
+                    border: 1px solid #d1d5db;
+                    border-radius: 6px;
+                    font-size: 1rem;
+                    background: white;
+                }
+                
+                .company-dropdown:focus {
+                    outline: none;
+                    border-color: #3b82f6;
+                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+                }
+                
+                .or-divider {
+                    margin: 1.5rem 0;
+                    position: relative;
+                }
+                
+                .or-divider::before {
+                    content: '';
+                    position: absolute;
+                    top: 50%;
+                    left: 0;
+                    right: 0;
+                    height: 1px;
+                    background: #e5e7eb;
+                }
+                
+                .or-divider span {
+                    position: relative;
+                    background: white;
+                    padding: 0 1rem;
+                    color: #9ca3af;
+                    font-size: 0.875rem;
+                }
+            </style>
+        `;
+        
+        // Setup event listeners
+        const companySelect = document.getElementById('companySelect');
+        const selectBtn = document.getElementById('selectCompanyBtn');
+        
+        companySelect.addEventListener('change', () => {
+            selectBtn.disabled = !companySelect.value;
+        });
+        
+        selectBtn.addEventListener('click', () => {
+            const selectedCompanyId = companySelect.value;
+            if (selectedCompanyId) {
+                localStorage.setItem('selectedCompanyId', selectedCompanyId);
+                this.loadCompanyData();
+            }
+        });
+    }
+
     renderDashboard() {
         const content = document.getElementById('dashboardContent');
         
@@ -83,7 +227,12 @@ export class CompanyDashboardTablePage {
         
         content.innerHTML = `
             <div class="dashboard-header">
-                <h1>${this.company.name} - Challenge Dashboard</h1>
+                <div class="header-left">
+                    <h1>${this.company.name} - Challenge Dashboard</h1>
+                    <button class="btn-switch-company" onclick="localStorage.removeItem('selectedCompanyId'); window.location.reload();">
+                        🔄 Switch Company
+                    </button>
+                </div>
                 <button class="btn-create" onclick="window.app.router.navigate('/company/challenges/create')">
                     ➕ Create New Challenge
                 </button>

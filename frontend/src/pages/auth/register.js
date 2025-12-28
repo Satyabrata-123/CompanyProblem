@@ -295,15 +295,23 @@ function initializeRegisterForm() {
     try {
       const user = await window.app.api.users.createUser(userData)
       
-      // Automatically log in the user
-      window.app.state.setUser(user)
+      // Store user in state
+      window.app.state.setState('user', {
+        currentUser: user,
+        isAuthenticated: true,
+        loading: false
+      })
+      
+      // Store in localStorage
+      localStorage.setItem('innovation_user', JSON.stringify(user))
       
       window.app.state.addNotification({
         type: 'success',
         message: `Welcome to Innovation Platform, ${user.fullName}!`
       })
       
-      window.app.router.navigate('/')
+      // Redirect to Dashboard after successful registration
+      window.app.router.navigate('/Dashboard')
       
     } catch (error) {
       console.error('Registration error:', error)

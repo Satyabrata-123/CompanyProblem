@@ -70,7 +70,7 @@ export class ChallengeDetailPage {
                         <button class="btn-primary" onclick="window.app.router.navigate('/challenges')">
                             🔍 Browse All Challenges
                         </button>
-                        <button class="btn-secondary" onclick="window.app.router.navigate('/dashboard')">
+                        <button class="btn-secondary" onclick="window.app.router.navigate('/Dashboard')">
                             📊 Back to Dashboard
                         </button>
                     </div>

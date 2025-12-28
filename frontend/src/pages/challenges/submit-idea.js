@@ -586,7 +586,7 @@ export class SubmitIdeaPage {
                     </div>
                     
                     <div class="action-buttons">
-                        <button class="btn-dashboard" onclick="window.app.router.navigate('/company/dashboard')">
+                        <button class="btn-dashboard" onclick="window.app.router.navigate('/company/Dashboard')">
                             🏢 Go to Dashboard Now
                         </button>
                     </div>
