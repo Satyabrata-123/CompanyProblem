@@ -510,6 +510,38 @@ export class SubmitIdeaPage {
                         <div class="ai-comparison-results">
                             <h3>🤖 AI Analysis Results</h3>
                             
+                            ${comparisonResult.aiDetected ? `
+                                <div class="ai-detection-warning">
+                                    <div class="warning-header">
+                                        <span class="warning-icon">⚠️</span>
+                                        <h4>AI-Generated Content Detected</h4>
+                                    </div>
+                                    <div class="warning-content">
+                                        <p><strong>Your submission appears to be AI-generated.</strong></p>
+                                        <p class="penalty-notice">🔻 Score reduced by ${comparisonResult.penaltyApplied ? '40-60' : '0'} points due to AI detection.</p>
+                                        <div class="detection-reason">
+                                            <h5>Why was this flagged?</h5>
+                                            <p>${comparisonResult.aiDetectionReason}</p>
+                                        </div>
+                                        <div class="authenticity-tips">
+                                            <h5>💡 How to submit authentic work:</h5>
+                                            <ul>
+                                                <li>✍️ Write in your own words and style</li>
+                                                <li>🎯 Include specific examples from your experience</li>
+                                                <li>💭 Share your unique perspective and insights</li>
+                                                <li>🔧 Provide concrete technical details, not buzzwords</li>
+                                                <li>📝 Natural language with personal voice is encouraged</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            ` : `
+                                <div class="authenticity-badge">
+                                    <span class="badge-icon">✅</span>
+                                    <span class="badge-text">Original Work Verified</span>
+                                </div>
+                            `}
+                            
                             <div class="match-score-display">
                                 <div class="score-circle" style="border-color: ${scoreColor}">
                                     <span class="score-number" style="color: ${scoreColor}">${Math.round(comparisonResult.matchScore)}</span>
@@ -561,6 +593,7 @@ export class SubmitIdeaPage {
                         <p><strong>Title:</strong> ${idea.title}</p>
                         <p><strong>Status:</strong> ${comparisonResult ? 'ANALYZED' : 'SUBMITTED'}</p>
                         ${comparisonResult ? `<p><strong>Match Score:</strong> ${Math.round(comparisonResult.matchScore)}/100</p>` : ''}
+                        ${comparisonResult && comparisonResult.aiDetected ? `<p><strong>⚠️ AI Detection:</strong> <span style="color: #dc3545;">Flagged</span></p>` : ''}
                         ${creditsAwarded > 0 ? `<p><strong>Credits Earned:</strong> ${creditsAwarded}</p>` : ''}
                         <p><strong>Submitted:</strong> ${new Date().toLocaleString()}</p>
                     </div>
@@ -1051,6 +1084,140 @@ const submitIdeaCSS = `
     border-radius: 12px;
     margin: 30px 0;
     text-align: center;
+}
+
+/* AI Detection Warning Styles */
+.ai-detection-warning {
+    background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%);
+    border: 3px solid #dc3545;
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 30px;
+    text-align: left;
+    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.2);
+    animation: warningPulse 2s ease-in-out infinite;
+}
+
+@keyframes warningPulse {
+    0%, 100% { box-shadow: 0 4px 15px rgba(220, 53, 69, 0.2); }
+    50% { box-shadow: 0 4px 25px rgba(220, 53, 69, 0.4); }
+}
+
+.warning-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #dc3545;
+}
+
+.warning-icon {
+    font-size: 32px;
+    animation: shake 0.5s ease-in-out infinite;
+}
+
+@keyframes shake {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-5deg); }
+    75% { transform: rotate(5deg); }
+}
+
+.warning-header h4 {
+    color: #dc3545;
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0;
+}
+
+.warning-content {
+    color: #721c24;
+}
+
+.warning-content p {
+    margin: 10px 0;
+    line-height: 1.6;
+}
+
+.penalty-notice {
+    background: #f8d7da;
+    padding: 12px;
+    border-radius: 6px;
+    border-left: 4px solid #dc3545;
+    font-weight: 600;
+    margin: 15px 0;
+}
+
+.detection-reason {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 15px 0;
+    border: 1px solid #f5c6cb;
+}
+
+.detection-reason h5 {
+    color: #dc3545;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.detection-reason p {
+    color: #495057;
+    white-space: pre-line;
+    line-height: 1.8;
+}
+
+.authenticity-tips {
+    background: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 15px;
+    border: 2px dashed #ffc107;
+}
+
+.authenticity-tips h5 {
+    color: #856404;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.authenticity-tips ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.authenticity-tips li {
+    padding: 8px 0;
+    color: #495057;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+/* Authenticity Badge (for verified original work) */
+.authenticity-badge {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    border: 2px solid #28a745;
+    border-radius: 8px;
+    padding: 15px 25px;
+    margin-bottom: 25px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    color: #155724;
+    box-shadow: 0 2px 10px rgba(40, 167, 69, 0.2);
+}
+
+.badge-icon {
+    font-size: 24px;
+}
+
+.badge-text {
+    font-size: 16px;
 }
 
 .match-score-display {

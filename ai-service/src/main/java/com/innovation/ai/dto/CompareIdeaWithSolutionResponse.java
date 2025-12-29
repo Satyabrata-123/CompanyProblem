@@ -23,4 +23,9 @@ public class CompareIdeaWithSolutionResponse {
     private String explanation; // Detailed explanation of the comparison
     private Integer creditsAwarded; // Credits awarded based on match score
     private String rewardTier; // Reward tier based on match score
+    
+    // AI Detection fields
+    private Boolean aiDetected; // true if the idea appears to be AI-generated
+    private String aiDetectionReason; // Explanation of why AI was detected
+    private Boolean penaltyApplied; // true if score was reduced due to AI detection
 }
