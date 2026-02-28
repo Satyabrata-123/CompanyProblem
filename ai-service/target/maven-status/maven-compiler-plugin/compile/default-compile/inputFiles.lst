@@ -1,9 +1,0 @@
-D:\COMPANY_PROBLEM\ai-service\src\main\java\com\innovation\ai\dto\CategorizeRequest.java
-D:\COMPANY_PROBLEM\ai-service\src\main\java\com\innovation\ai\config\WebClientConfig.java
-D:\COMPANY_PROBLEM\ai-service\src\main\java\com\innovation\ai\controller\AiController.java
-D:\COMPANY_PROBLEM\ai-service\src\main\java\com\innovation\ai\dto\CategorizeResponse.java
-D:\COMPANY_PROBLEM\ai-service\src\main\java\com\innovation\ai\service\AiService.java
-D:\COMPANY_PROBLEM\ai-service\src\main\java\com\innovation\ai\EnableEurekaClient.java
-D:\COMPANY_PROBLEM\ai-service\src\main\java\com\innovation\ai\AiServiceApplication.java
-D:\COMPANY_PROBLEM\ai-service\src\main\java\com\innovation\ai\dto\CompareIdeaWithSolutionRequest.java
-D:\COMPANY_PROBLEM\ai-service\src\main\java\com\innovation\ai\dto\CompareIdeaWithSolutionResponse.java

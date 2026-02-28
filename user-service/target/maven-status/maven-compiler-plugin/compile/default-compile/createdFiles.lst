@@ -1,7 +1,0 @@
-com\innovation\user\entity\User$UserBuilder.class
-com\innovation\user\entity\User.class
-com\innovation\user\EnableEurekaClient.class
-com\innovation\user\service\UserService.class
-com\innovation\user\UserServiceApplication.class
-com\innovation\user\controller\UserController.class
-com\innovation\user\repository\UserRepository.class

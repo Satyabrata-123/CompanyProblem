@@ -1,9 +1,0 @@
-D:\COMPANY_PROBLEM\gamification-service\src\main\java\com\innovation\gamification\GamificationServiceApplication.java
-D:\COMPANY_PROBLEM\gamification-service\src\main\java\com\innovation\gamification\EnableEurekaClient.java
-D:\COMPANY_PROBLEM\gamification-service\src\main\java\com\innovation\gamification\repository\UserBadgeRepository.java
-D:\COMPANY_PROBLEM\gamification-service\src\main\java\com\innovation\gamification\entity\Badge.java
-D:\COMPANY_PROBLEM\gamification-service\src\main\java\com\innovation\gamification\entity\UserBadge.java
-D:\COMPANY_PROBLEM\gamification-service\src\main\java\com\innovation\gamification\config\WebClientConfig.java
-D:\COMPANY_PROBLEM\gamification-service\src\main\java\com\innovation\gamification\controller\GamificationController.java
-D:\COMPANY_PROBLEM\gamification-service\src\main\java\com\innovation\gamification\repository\BadgeRepository.java
-D:\COMPANY_PROBLEM\gamification-service\src\main\java\com\innovation\gamification\service\GamificationService.java
