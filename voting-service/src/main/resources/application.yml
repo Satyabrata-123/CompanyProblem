@@ -7,7 +7,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/VotingService
     username: root
-    password: Satya@123
+    password: sql24
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
