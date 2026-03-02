@@ -340,6 +340,10 @@ export class ApiClient {
     return this.put(`/companies/${id}/verify`)
   }
 
+  async getCompanyByEmail(email) {
+    return this.get(`/companies/email/${email}`)
+  }
+
   // Challenge Service Methods
   async createChallenge(challengeData, internalSolutionBrief) {
     return this.post('/challenges', {

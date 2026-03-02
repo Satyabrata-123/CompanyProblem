@@ -83,6 +83,12 @@ public class CompanyService {
         return convertToDTO(saved);
     }
 
+    public CompanyDTO getCompanyByEmail(String email) {
+        Company company = companyRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Company not found with email: " + email));
+        return convertToDTO(company);
+    }
+
     private CompanyDTO convertToDTO(Company company) {
         return CompanyDTO.builder()
                 .id(company.getId())

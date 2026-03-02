@@ -4,6 +4,13 @@ export class GamificationService {
   }
 
   async awardPoints(userId, action) {
+    // Check if user is a company - companies don't earn points
+    const currentUser = window.app.state.getState('user')?.currentUser
+    if (currentUser && (currentUser.accountType === 'company' || currentUser.role === 'company')) {
+      console.log('ℹ️ Skipping points for company account')
+      return
+    }
+    
     const pointActions = {
       'idea-submitted': () => this.api.awardPointsForIdeaSubmission(userId),
       'vote': () => this.api.awardPointsForVote(userId),
@@ -69,6 +76,13 @@ export class GamificationService {
   }
 
   async checkBadgeEligibility(userId) {
+    // Check if user is a company - companies don't have badges
+    const currentUser = window.app.state.getState('user')?.currentUser
+    if (currentUser && (currentUser.accountType === 'company' || currentUser.role === 'company')) {
+      console.log('ℹ️ Skipping badge check for company account')
+      return []
+    }
+    
     try {
       const [user, userIdeas, allBadges] = await Promise.all([
         this.api.getUserById(userId),
@@ -118,6 +132,20 @@ export class GamificationService {
   }
 
   async getUserStats(userId) {
+    // Check if user is a company - return empty stats
+    const currentUser = window.app.state.getState('user')?.currentUser
+    if (currentUser && (currentUser.accountType === 'company' || currentUser.role === 'company')) {
+      console.log('ℹ️ Returning empty stats for company account')
+      return {
+        totalPoints: 0,
+        totalIdeas: 0,
+        implementedIdeas: 0,
+        recentIdeas: 0,
+        badges: 0,
+        rank: null
+      }
+    }
+    
     try {
       const [user, userIdeas, userBadges] = await Promise.all([
         this.api.getUserById(userId),

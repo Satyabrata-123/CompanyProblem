@@ -394,11 +394,32 @@ export class CompanyRegisterPage {
             };
 
             const response = await window.app.api.post('/companies', companyData);
+            console.log('✅ Company registered:', response);
+            
+            // Store the company ID for dashboard access
+            localStorage.setItem('selectedCompanyId', response.id);
+            console.log('✅ Company ID stored:', response.id);
             
             // Update user's company association in localStorage
-            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const currentUser = JSON.parse(localStorage.getItem('innovation_user') || '{}');
             currentUser.companyId = response.id;
-            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            currentUser.companyData = response;
+            localStorage.setItem('innovation_user', JSON.stringify(currentUser));
+            
+            // Also update the app state
+            if (window.app && window.app.state) {
+                const userState = window.app.state.getState('user');
+                if (userState && userState.currentUser) {
+                    window.app.state.setState('user', {
+                        ...userState,
+                        currentUser: {
+                            ...userState.currentUser,
+                            companyId: response.id,
+                            companyData: response
+                        }
+                    });
+                }
+            }
             
             this.showSuccessMessage();
             

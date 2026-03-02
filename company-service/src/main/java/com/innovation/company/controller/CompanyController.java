@@ -50,4 +50,11 @@ public class CompanyController {
     public ResponseEntity<CompanyDTO> verifyCompany(@PathVariable UUID id) {
         return ResponseEntity.ok(companyService.verifyCompany(id));
     }
+
+
+    @GetMapping("/email/{email}")
+    public ResponseEntity<CompanyDTO> getCompanyByEmail(@PathVariable String email) {
+        return ResponseEntity.ok(companyService.getCompanyByEmail(email));
+    }
+
 }

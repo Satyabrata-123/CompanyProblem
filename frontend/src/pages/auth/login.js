@@ -186,6 +186,12 @@ function initializeLoginForm() {
       // Store in localStorage
       localStorage.setItem('innovation_user', JSON.stringify(user))
 
+      // If it's a company account, store the company ID for dashboard
+      if (user.accountType === 'company' || user.role === 'company') {
+        localStorage.setItem('selectedCompanyId', user.id)
+        console.log('✅ Company ID stored for dashboard:', user.id)
+      }
+
       window.app.state.addNotification({
         type: 'success',
         message: `Welcome back, ${user.fullName}!`
@@ -195,8 +201,16 @@ function initializeLoginForm() {
       const redirectTo = sessionStorage.getItem('redirectAfterLogin');
       sessionStorage.removeItem('redirectAfterLogin');
       
-      // Redirect to stored destination or landing page
-      window.location.hash = redirectTo ? `#${redirectTo}` : '#/'
+      // Redirect based on account type
+      if (redirectTo) {
+        window.location.hash = `#${redirectTo}`
+      } else if (user.accountType === 'company' || user.role === 'company') {
+        // Redirect to company dashboard (note: capital D to match route)
+        window.location.hash = '#/company/Dashboard'
+      } else {
+        // Redirect to regular user landing page
+        window.location.hash = '#/'
+      }
 
     } catch (error) {
       console.error('Login error:', error)

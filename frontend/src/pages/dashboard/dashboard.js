@@ -225,10 +225,12 @@ export default async function DashboardPage() {
                   <span class="mr-2">🎯</span>
                   Browse Challenges
                 </a>
-                <a href="#/company/Dashboard" class="btn-success w-full flex items-center justify-center">
-                  <span class="mr-2">🏢</span>
-                  Company Dashboard
-                </a>
+                ${(currentUser.accountType === 'company' || currentUser.role === 'company') ? `
+                  <a href="#/company/Dashboard" class="btn-success w-full flex items-center justify-center">
+                    <span class="mr-2">🏢</span>
+                    Company Dashboard
+                  </a>
+                ` : ''}
                 <a href="#/leaderboard" class="btn-ghost w-full flex items-center justify-center">
                   <span class="mr-2">🏆</span>
                   View Leaderboard

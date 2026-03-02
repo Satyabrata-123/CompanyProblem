@@ -12,7 +12,13 @@ export class UserService {
   async getCurrentUser() {
     const userState = window.app.state.getState('user')
     if (userState.currentUser) {
-      // Refresh user data from server
+      // Don't try to refresh company accounts from user service
+      if (userState.currentUser.accountType === 'company' || userState.currentUser.role === 'company') {
+        console.log('ℹ️ Current user is a company, returning cached data')
+        return userState.currentUser
+      }
+      
+      // Refresh user data from server for regular users
       try {
         return await this.getUserById(userState.currentUser.id)
       } catch (error) {
@@ -114,37 +120,70 @@ export class UserService {
   }
 
   async authenticateUser(email) {
+    console.log('🔐 Authenticating user with email:', email)
+    
     try {
-      const user = await this.getUserByEmail(email)
-      
-      // Store user in state
-      window.app.state.setUser(user)
-      
-      // Load user's additional data (don't fail if these fail)
+      // First try to authenticate as a regular user
       try {
-        const [userStats, userBadges] = await Promise.all([
-          this.getUserStats(user.id).catch(err => {
-            console.warn('Failed to load user stats:', err)
-            return { totalPoints: 0, ideasSubmitted: 0, ideasImplemented: 0, totalVotes: 0, recentIdeas: 0 }
-          }),
-          this.api.getUserBadges(user.id).catch(err => {
+        console.log('👤 Trying user authentication...')
+        const user = await this.api.getUserByEmail(email)
+        console.log('✅ User found:', user)
+        
+        // Store user in state
+        window.app.state.setUser(user)
+        
+        // Load user's additional data (don't fail if these fail)
+        try {
+          const userBadges = await this.api.getUserBadges(user.id).catch(err => {
             console.warn('Failed to load user badges:', err)
             return []
           })
-        ])
+          
+          // Update gamification state
+          window.app.state.setState('gamification', {
+            userBadges: userBadges || []
+          })
+        } catch (error) {
+          console.warn('Failed to load additional user data:', error)
+          // Continue anyway - authentication succeeded
+        }
         
-        // Update gamification state
-        window.app.state.setState('gamification', {
-          userBadges: userBadges || []
-        })
-      } catch (error) {
-        console.warn('Failed to load additional user data:', error)
-        // Continue anyway - authentication succeeded
+        return { ...user, accountType: 'user' }
+      } catch (userError) {
+        console.log('❌ User not found, trying company authentication...')
+        console.log('User error:', userError.message)
+        
+        // If user not found, try to authenticate as a company
+        try {
+          console.log('🏢 Trying company authentication...')
+          const company = await this.api.getCompanyByEmail(email)
+          console.log('✅ Company found:', company)
+          
+          // Store company as user in state with company flag
+          const companyUser = {
+            id: company.id,
+            email: company.email,
+            fullName: company.name,
+            department: company.industry || 'Company',
+            role: 'company',
+            accountType: 'company',
+            companyData: company
+          }
+          
+          window.app.state.setUser(companyUser)
+          
+          // Don't try to load user badges for company accounts
+          console.log('ℹ️ Skipping user badges for company account')
+          
+          return companyUser
+        } catch (companyError) {
+          console.log('❌ Company not found:', companyError.message)
+          throw new Error('Authentication failed. No account found with this email.')
+        }
       }
-      
-      return user
     } catch (error) {
-      throw new Error('Authentication failed. Please check your email.')
+      console.error('🚫 Authentication failed:', error)
+      throw error
     }
   }
 

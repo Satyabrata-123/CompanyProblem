@@ -22,15 +22,34 @@ export class CompanyDashboardTablePage {
 
     async loadCompanyData() {
         try {
+            // Check if logged-in user is a company
+            const currentUser = window.app.state.getState('user')?.currentUser;
+            console.log('📊 Loading company dashboard, current user:', currentUser);
+            
+            // Restrict access to company accounts only
+            if (!currentUser || (currentUser.accountType !== 'company' && currentUser.role !== 'company')) {
+                console.log('🚫 Access denied: User is not a company');
+                this.renderAccessDenied();
+                return;
+            }
+            
+            // If user is a company, automatically use their company ID
+            if (currentUser && (currentUser.accountType === 'company' || currentUser.role === 'company')) {
+                console.log('🏢 User is a company, using their ID:', currentUser.id);
+                localStorage.setItem('selectedCompanyId', currentUser.id);
+            }
+            
             // Load all companies first
             const allCompanies = await window.app.api.getAllCompanies();
-            const activeCompanies = allCompanies.filter(c => c.isActive && c.isVerified);
+            const activeCompanies = allCompanies.filter(c => c.isActive);
             
             // Check if user has a selected company in localStorage
             let selectedCompanyId = localStorage.getItem('selectedCompanyId');
+            console.log('📌 Selected company ID:', selectedCompanyId);
             
-            // If no company selected, show company selector
-            if (!selectedCompanyId && activeCompanies.length > 0) {
+            // If no company selected and not a company user, show company selector
+            if (!selectedCompanyId && activeCompanies.length > 0 && 
+                (!currentUser || (currentUser.accountType !== 'company' && currentUser.role !== 'company'))) {
                 this.renderCompanySelector(activeCompanies);
                 return;
             }
@@ -43,18 +62,124 @@ export class CompanyDashboardTablePage {
             // Load company details
             const companyResponse = await window.app.api.get(`/companies/${selectedCompanyId}`);
             this.company = companyResponse.data || companyResponse;
+            console.log('✅ Company loaded:', this.company);
 
             // Load company challenges
             const challengesResponse = await window.app.api.get(`/challenges/company/${selectedCompanyId}`);
             this.challenges = challengesResponse.data || challengesResponse || [];
+            console.log('✅ Challenges loaded:', this.challenges.length);
 
             this.renderDashboard();
             this.setupGlobalFunctions();
         } catch (error) {
-            console.error('Error loading company data:', error);
+            console.error('❌ Error loading company data:', error);
             document.getElementById('dashboardContent').innerHTML = 
-                '<div class="error">Failed to load company dashboard. Please check if services are running.</div>';
+                `<div class="error">
+                    <h3>Failed to load company dashboard</h3>
+                    <p>${error.message || 'Please check if services are running.'}</p>
+                    <button class="btn-primary" onclick="window.location.reload()">Retry</button>
+                </div>`;
         }
+    }
+
+    renderAccessDenied() {
+        document.getElementById('dashboardContent').innerHTML = `
+            <div class="access-denied-container">
+                <div class="access-denied-card">
+                    <div class="access-denied-icon">🚫</div>
+                    <h2>Access Denied</h2>
+                    <p>This page is only accessible to registered company accounts.</p>
+                    <p class="access-denied-subtitle">
+                        If you're a company, please register or login with your company email.
+                    </p>
+                    <div class="access-denied-actions">
+                        <button class="btn-primary" onclick="window.app.router.navigate('/')">
+                            Go to Home
+                        </button>
+                        <button class="btn-secondary" onclick="window.app.router.navigate('/company/register')">
+                            Register Company
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <style>
+                .access-denied-container {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    min-height: 60vh;
+                    padding: 2rem;
+                }
+                
+                .access-denied-card {
+                    background: white;
+                    border-radius: 12px;
+                    padding: 3rem;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                    max-width: 500px;
+                    width: 100%;
+                    text-align: center;
+                }
+                
+                .access-denied-icon {
+                    font-size: 4rem;
+                    margin-bottom: 1rem;
+                }
+                
+                .access-denied-card h2 {
+                    font-size: 1.75rem;
+                    margin-bottom: 1rem;
+                    color: #dc3545;
+                }
+                
+                .access-denied-card p {
+                    color: #6b7280;
+                    margin-bottom: 1rem;
+                    line-height: 1.6;
+                }
+                
+                .access-denied-subtitle {
+                    font-size: 0.9rem;
+                    color: #9ca3af;
+                }
+                
+                .access-denied-actions {
+                    display: flex;
+                    gap: 1rem;
+                    justify-content: center;
+                    margin-top: 2rem;
+                }
+                
+                .access-denied-actions .btn-primary,
+                .access-denied-actions .btn-secondary {
+                    padding: 0.75rem 1.5rem;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    border: none;
+                }
+                
+                .access-denied-actions .btn-primary {
+                    background: #007bff;
+                    color: white;
+                }
+                
+                .access-denied-actions .btn-primary:hover {
+                    background: #0056b3;
+                }
+                
+                .access-denied-actions .btn-secondary {
+                    background: #6c757d;
+                    color: white;
+                }
+                
+                .access-denied-actions .btn-secondary:hover {
+                    background: #5a6268;
+                }
+            </style>
+        `;
     }
 
     setupGlobalFunctions() {
