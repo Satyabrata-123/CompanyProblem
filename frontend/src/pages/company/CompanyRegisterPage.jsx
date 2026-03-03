@@ -1,24 +1,22 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
 import { useNotification } from '../../context/NotificationContext'
 import Layout from '../../components/layout/Layout'
+import { api } from '../../services'
 
 export default function CompanyRegisterPage() {
   const navigate = useNavigate()
-  const { registerCompany } = useAuth()
   const { addNotification } = useNotification()
-
+  
   const [formData, setFormData] = useState({
     name: '',
     industry: '',
     size: '',
     website: '',
     description: '',
-    email: '',
-    phone: '',
-    address: '',
-    contactPerson: ''
+    contactEmail: '',
+    contactPhone: '',
+    address: ''
   })
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState({})
@@ -48,8 +46,8 @@ export default function CompanyRegisterPage() {
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!formData.email || !emailRegex.test(formData.email)) {
-      newErrors.email = 'Valid email is required'
+    if (!formData.contactEmail || !emailRegex.test(formData.contactEmail)) {
+      newErrors.contactEmail = 'Valid email is required'
     }
 
     if (!formData.description || formData.description.trim().length < 20) {
@@ -68,17 +66,17 @@ export default function CompanyRegisterPage() {
     setLoading(true)
 
     try {
-      await registerCompany(formData)
-
+      await api.createCompany(formData)
+      
       setSuccess(true)
       addNotification({
         type: 'success',
-        message: 'Company registered successfully! Redirecting to dashboard...'
+        message: 'Company registered successfully! Awaiting verification.'
       })
 
       setTimeout(() => {
-        navigate('/company/dashboard')
-      }, 2000)
+        navigate('/challenges')
+      }, 3000)
     } catch (error) {
       setErrors({ submit: error.message || 'Failed to register company. Please try again.' })
     } finally {
@@ -135,7 +133,7 @@ export default function CompanyRegisterPage() {
             {/* Company Information */}
             <div className="mb-8">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Company Information</h3>
-
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
@@ -238,54 +236,39 @@ export default function CompanyRegisterPage() {
             {/* Contact Information */}
             <div className="mb-8">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
-
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label htmlFor="contactPerson" className="block text-sm font-medium text-gray-700 mb-2">
-                    Contact Person
-                  </label>
-                  <input
-                    id="contactPerson"
-                    name="contactPerson"
-                    type="text"
-                    className="input"
-                    placeholder="John Doe"
-                    value={formData.contactPerson}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="contactEmail" className="block text-sm font-medium text-gray-700 mb-2">
                     Contact Email *
                   </label>
                   <input
-                    id="email"
-                    name="email"
+                    id="contactEmail"
+                    name="contactEmail"
                     type="email"
                     required
-                    className={`input ${errors.email ? 'input-error' : ''}`}
+                    className={`input ${errors.contactEmail ? 'input-error' : ''}`}
                     placeholder="contact@example.com"
-                    value={formData.email}
+                    value={formData.contactEmail}
                     onChange={handleChange}
                   />
-                  {errors.email && <p className="text-sm text-danger-600 mt-1">{errors.email}</p>}
+                  {errors.contactEmail && <p className="text-sm text-danger-600 mt-1">{errors.contactEmail}</p>}
                 </div>
-              </div>
 
-              <div className="mt-6">
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                  Contact Phone
-                </label>
-                <input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  className="input"
-                  placeholder="+1 (555) 123-4567"
-                  value={formData.phone}
-                  onChange={handleChange}
-                />
+                <div>
+                  <label htmlFor="contactPhone" className="block text-sm font-medium text-gray-700 mb-2">
+                    Contact Phone
+                  </label>
+                  <input
+                    id="contactPhone"
+                    name="contactPhone"
+                    type="tel"
+                    className="input"
+                    placeholder="+1 (555) 123-4567"
+                    value={formData.contactPhone}
+                    onChange={handleChange}
+                  />
+                </div>
               </div>
 
               <div className="mt-6">

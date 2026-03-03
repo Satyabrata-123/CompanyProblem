@@ -269,11 +269,7 @@ export default function ChallengeDetailPage() {
                   return (b.voteCount || 0) - (a.voteCount || 0)
                 })
                 .map((solution, index) => (
-                  <SolutionCard 
-                    key={solution.id} 
-                    solution={solution} 
-                    rank={index + 1}
-                  />
+                  <SolutionCard key={solution.id} solution={solution} rank={index + 1} />
                 ))}
             </div>
           )}

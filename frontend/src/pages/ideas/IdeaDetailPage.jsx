@@ -5,13 +5,12 @@ import { useNotification } from '../../context/NotificationContext'
 import Layout from '../../components/layout/Layout'
 import { api } from '../../services'
 
-
 export default function IdeaDetailPage() {
   const { id } = useParams()
   const { currentUser } = useAuth()
   const { addNotification } = useNotification()
   const navigate = useNavigate()
-
+  
   const [idea, setIdea] = useState(null)
   const [loading, setLoading] = useState(true)
   const [userVote, setUserVote] = useState(null)
@@ -25,12 +24,23 @@ export default function IdeaDetailPage() {
   const loadIdeaDetails = async () => {
     try {
       setLoading(true)
-      const ideaData = await api.getIdeaById(id)
-      setIdea(ideaData)
+      const [ideaData, commentsData] = await Promise.all([
+        api.getIdeaById(id),
+        api.getCommentsForIdea(id).catch(() => [])
+      ])
 
-      // Comments and voting are not implemented in backend yet
-      setComments([])
-      setUserVote(null)
+      setIdea(ideaData)
+      setComments(commentsData)
+
+      // Check if user has voted
+      if (currentUser) {
+        try {
+          const vote = await api.getUserVoteForIdea(id, currentUser.id)
+          setUserVote(vote)
+        } catch (error) {
+          setUserVote(null)
+        }
+      }
     } catch (error) {
       console.error('Failed to load idea:', error)
       addNotification({
@@ -52,13 +62,6 @@ export default function IdeaDetailPage() {
       return
     }
 
-    addNotification({
-      type: 'info',
-      message: 'Voting feature is not yet available'
-    })
-
-    // TODO: Implement when backend supports voting
-    /*
     try {
       if (userVote) {
         // Remove vote
@@ -88,20 +91,12 @@ export default function IdeaDetailPage() {
         message: 'Failed to vote'
       })
     }
-    */
   }
 
   const handleCommentSubmit = async (e) => {
     e.preventDefault()
     if (!newComment.trim()) return
 
-    addNotification({
-      type: 'info',
-      message: 'Comments feature is not yet available'
-    })
-
-    // TODO: Implement when backend supports comments
-    /*
     try {
       const commentData = {
         ideaId: id,
@@ -134,7 +129,6 @@ export default function IdeaDetailPage() {
         message: 'Failed to add comment'
       })
     }
-    */
   }
 
   if (loading) {
@@ -187,30 +181,63 @@ export default function IdeaDetailPage() {
 
             <p className="text-gray-700 whitespace-pre-wrap mb-6">{idea.description}</p>
 
-            {/* Vote Section - Disabled until backend implements it */}
+            {/* Vote Section */}
             <div className="flex items-center gap-4 pt-4 border-t">
               <button
                 onClick={() => handleVote('upvote')}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 cursor-not-allowed opacity-60"
-                disabled
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                  userVote ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
               >
                 <span>👍</span>
                 <span>{idea.voteCount || 0} votes</span>
               </button>
-              <span className="text-gray-500 text-sm">
-                Voting feature coming soon
+              <span className="text-gray-500">
+                {userVote ? 'You voted for this idea' : 'Vote for this idea'}
               </span>
             </div>
           </div>
 
-          {/* Comments Section - Disabled until backend implements it */}
+          {/* Comments Section */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">
-              Comments
+              Comments ({comments.length})
             </h2>
-            <p className="text-gray-500 text-center py-8">
-              💬 Comments feature coming soon!
-            </p>
+
+            {/* Add Comment Form */}
+            {currentUser && (
+              <form onSubmit={handleCommentSubmit} className="mb-6">
+                <textarea
+                  className="input mb-2"
+                  rows="3"
+                  placeholder="Add a comment..."
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                />
+                <button type="submit" className="btn-primary" disabled={!newComment.trim()}>
+                  Post Comment
+                </button>
+              </form>
+            )}
+
+            {/* Comments List */}
+            <div className="space-y-4">
+              {comments.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">No comments yet</p>
+              ) : (
+                comments.map((comment, index) => (
+                  <div key={index} className="border-b pb-4 last:border-b-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="font-medium text-gray-900">{comment.userName}</span>
+                      <span className="text-sm text-gray-500">
+                        {new Date(comment.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <p className="text-gray-700">{comment.content}</p>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
       </div>

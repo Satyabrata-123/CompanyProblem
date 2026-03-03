@@ -10,8 +10,16 @@ export class UserService {
   }
 
   async getCurrentUser() {
-    // This method is not used in React version
-    // User state is managed by AuthContext
+    const userState = window.app.state.getState('user')
+    if (userState.currentUser) {
+      // Refresh user data from server
+      try {
+        return await this.getUserById(userState.currentUser.id)
+      } catch (error) {
+        console.warn('Failed to refresh user data:', error)
+        return userState.currentUser
+      }
+    }
     return null
   }
 
@@ -108,9 +116,16 @@ export class UserService {
   async authenticateUser(email) {
     try {
       const user = await this.getUserByEmail(email)
+
+      // Store user in state
+      window.app.state.setUser(user)
+
+      // Load user's additional data in background (non-blocking)
+      this.loadUserDataInBackground(user.id)
+
       return user
     } catch (error) {
-      throw new Error('Authentication failed. User not found with this email.')
+      throw new Error('Authentication failed. Please check your email.')
     }
   }
 
@@ -126,14 +141,17 @@ export class UserService {
         return []
       })
     ]).then(([userStats, userBadges]) => {
-      console.log('User data loaded:', { userStats, userBadges })
+      // Update gamification state when ready
+      window.app.state.setState('gamification', {
+        userBadges: userBadges || []
+      })
     }).catch(error => {
       console.warn('Failed to load additional user data:', error)
     })
   }
 
   logout() {
-    // Logout is handled by AuthContext in React version
-    console.log('Logout called from user service')
+    window.app.state.logout()
+    window.app.router.navigate('/login')
   }
 }

@@ -31,24 +31,7 @@ export default function SubmitSolutionPage() {
   const loadChallenge = async () => {
     try {
       setLoading(true)
-      let challengeData = null
-
-      // Try difficulty-based endpoints first
-      try {
-        challengeData = await api.getChallengeByIdAndDifficulty('BEGINNER', id)
-      } catch (e) {
-        try {
-          challengeData = await api.getChallengeByIdAndDifficulty('INTERMEDIATE', id)
-        } catch (e2) {
-          try {
-            challengeData = await api.getChallengeByIdAndDifficulty('EXPERT', id)
-          } catch (e3) {
-            // Try generic endpoint as fallback
-            challengeData = await api.getChallengeById(id)
-          }
-        }
-      }
-
+      const challengeData = await api.getChallengeById(id)
       setChallenge(challengeData)
     } catch (error) {
       console.error('Failed to load challenge:', error)
@@ -107,6 +90,13 @@ export default function SubmitSolutionPage() {
       }
 
       await api.submitSolution(solutionData)
+
+      // Increment challenge submission count
+      try {
+        await api.incrementChallengeSubmissions(id)
+      } catch (err) {
+        console.warn('Failed to increment submission count:', err)
+      }
 
       addNotification({
         type: 'success',

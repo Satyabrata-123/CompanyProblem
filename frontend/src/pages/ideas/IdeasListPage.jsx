@@ -9,7 +9,7 @@ export default function IdeasListPage() {
   const { currentUser } = useAuth()
   const { addNotification } = useNotification()
   const [searchParams] = useSearchParams()
-
+  
   const [ideas, setIdeas] = useState([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({
@@ -127,7 +127,7 @@ export default function IdeasListPage() {
                 value={filters.search}
                 onChange={(e) => handleFilterChange('search', e.target.value)}
               />
-
+              
               <select
                 className="input"
                 value={filters.status}
@@ -208,7 +208,7 @@ function IdeaCard({ idea }) {
           {idea.status}
         </span>
       </div>
-
+      
       <p className="text-gray-600 text-sm mb-4 line-clamp-3">
         {idea.description}
       </p>

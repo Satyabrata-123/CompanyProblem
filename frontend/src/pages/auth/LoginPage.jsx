@@ -55,10 +55,10 @@ export default function LoginPage() {
             <span className="text-2xl">💡</span>
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            User Sign In
+            Sign in to Innovation Platform
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Welcome back! Sign in with your user email to continue.
+            Welcome back! Please sign in to continue.
           </p>
         </div>
 
@@ -79,7 +79,7 @@ export default function LoginPage() {
           <div className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                User Email
+                Email address
               </label>
               <input
                 id="email"
@@ -87,7 +87,7 @@ export default function LoginPage() {
                 type="email"
                 required
                 className="input mt-1"
-                placeholder="your.email@example.com"
+                placeholder="your.email@company.com"
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -108,17 +108,11 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <div className="text-center space-y-2">
+          <div className="text-center">
             <p className="text-sm text-gray-600">
               Don't have an account?{' '}
               <a href="/register" className="font-medium text-primary-600 hover:text-primary-500 transition-colors">
                 Register here
-              </a>
-            </p>
-            <p className="text-sm text-gray-600">
-              Are you a company?{' '}
-              <a href="/company/login" className="font-medium text-orange-600 hover:text-orange-500 transition-colors">
-                Company Login
               </a>
             </p>
           </div>

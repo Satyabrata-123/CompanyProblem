@@ -6,11 +6,7 @@ import { api } from '../../services'
 
 export default function ChallengesListPage() {
   const { addNotification } = useNotification()
-  const [challenges, setChallenges] = useState({
-    BEGINNER: [],
-    INTERMEDIATE: [],
-    EXPERT: []
-  })
+  const [challenges, setChallenges] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
 
@@ -26,17 +22,11 @@ export default function ChallengesListPage() {
       if (filter === 'all') {
         data = await api.getAllChallenges()
       } else {
+        // Filter is already in correct format: BEGINNER, INTERMEDIATE, EXPERT
         data = await api.getChallengesByDifficulty(filter)
       }
 
-      // Group challenges by difficulty
-      const grouped = {
-        BEGINNER: data.filter(c => c.difficulty === 'BEGINNER' || c.difficulty === 'EASY'),
-        INTERMEDIATE: data.filter(c => c.difficulty === 'INTERMEDIATE' || c.difficulty === 'MEDIUM'),
-        EXPERT: data.filter(c => c.difficulty === 'EXPERT' || c.difficulty === 'HARD')
-      }
-
-      setChallenges(grouped)
+      setChallenges(data)
     } catch (error) {
       console.error('Failed to load challenges:', error)
       addNotification({
@@ -65,42 +55,41 @@ export default function ChallengesListPage() {
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Challenges</h1>
             <p className="mt-2 text-gray-600">
-              {challenges.BEGINNER.length + challenges.INTERMEDIATE.length + challenges.EXPERT.length} challenges available
+              Solve challenges and earn rewards
             </p>
           </div>
 
-          {/* Filter Tabs - Removed */}
+          {/* Filter Tabs */}
+          <div className="flex gap-2 mb-6">
+            {[
+              { value: 'all', label: 'All' },
+              { value: 'BEGINNER', label: 'Beginner' },
+              { value: 'INTERMEDIATE', label: 'Intermediate' },
+              { value: 'EXPERT', label: 'Expert' }
+            ].map(level => (
+              <button
+                key={level.value}
+                onClick={() => setFilter(level.value)}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${filter === level.value
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+              >
+                {level.label}
+              </button>
+            ))}
+          </div>
 
-          {/* Challenges by Difficulty - 3 Columns */}
-          {challenges.BEGINNER.length === 0 && challenges.INTERMEDIATE.length === 0 && challenges.EXPERT.length === 0 ? (
+          {/* Challenges Grid */}
+          {challenges.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-500 text-lg">No challenges available</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Beginner Column */}
-              <DifficultyColumn
-                title="Beginner"
-                icon="🟢"
-                color="green"
-                challenges={challenges.BEGINNER}
-              />
-
-              {/* Intermediate Column */}
-              <DifficultyColumn
-                title="Intermediate"
-                icon="🟡"
-                color="yellow"
-                challenges={challenges.INTERMEDIATE}
-              />
-
-              {/* Expert Column */}
-              <DifficultyColumn
-                title="Expert"
-                icon="🔴"
-                color="red"
-                challenges={challenges.EXPERT}
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {challenges.map(challenge => (
+                <ChallengeCard key={challenge.id} challenge={challenge} />
+              ))}
             </div>
           )}
         </div>
@@ -110,88 +99,56 @@ export default function ChallengesListPage() {
 }
 
 function ChallengeCard({ challenge }) {
+  const getDifficultyColor = (difficulty) => {
+    switch (difficulty?.toUpperCase()) {
+      case 'BEGINNER':
+      case 'EASY':
+        return 'bg-green-100 text-green-800'
+      case 'INTERMEDIATE':
+      case 'MEDIUM':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'EXPERT':
+      case 'HARD':
+        return 'bg-red-100 text-red-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
   return (
     <Link
       to={`/challenges/${challenge.id}`}
-      className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-4 block my-1"
+      className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6"
     >
-      <h3 className="text-base font-semibold text-gray-900 line-clamp-2 mb-2">
-        {challenge.title}
-      </h3>
+      <div className="flex justify-between items-start mb-3">
+        <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">
+          {challenge.title}
+        </h3>
+        <span className={`badge ${getDifficultyColor(challenge.difficulty)}`}>
+          {challenge.difficulty}
+        </span>
+      </div>
 
-      <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+      <p className="text-gray-600 text-sm mb-4 line-clamp-3">
         {challenge.description}
       </p>
 
-      <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
-        <span>🏆 {challenge.rewardPoints || 0} pts</span>
-        <span>📝 {challenge.submissionCount || 0}</span>
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-gray-500">
+          🏆 {challenge.rewardPoints || 0} points
+        </span>
+        <span className="text-gray-500">
+          📝 {challenge.submissionCount || 0} submissions
+        </span>
       </div>
 
       {challenge.companyName && (
-        <div className="pt-2 border-t">
-          <span className="text-xs text-gray-600">
+        <div className="mt-3 pt-3 border-t">
+          <span className="text-sm text-gray-600">
             By {challenge.companyName}
           </span>
         </div>
       )}
     </Link>
-  )
-}
-
-function DifficultyColumn({ title, icon, color, challenges }) {
-  const getColorClasses = (color) => {
-    switch (color) {
-      case 'green':
-        return {
-          bg: 'bg-green-100',
-          border: 'border-green-400',
-          header: 'bg-green-600',
-          text: 'text-white'
-        }
-      case 'yellow':
-        return {
-          bg: 'bg-yellow-100',
-          border: 'border-yellow-400',
-          header: 'bg-yellow-600',
-          text: 'text-white'
-        }
-      case 'red':
-        return {
-          bg: 'bg-red-100',
-          border: 'border-red-400',
-          header: 'bg-red-600',
-          text: 'text-white'
-        }
-      default:
-        return {
-          bg: 'bg-gray-50',
-          border: 'border-gray-200',
-          header: 'bg-gray-100',
-          text: 'text-gray-800'
-        }
-    }
-  }
-
-  const colors = getColorClasses(color)
-
-  return (
-    <div className={`${colors.bg} ${colors.border} border-2 rounded-lg overflow-hidden`}>
-      <div className={`${colors.header} ${colors.text} p-4 font-semibold text-lg flex items-center justify-between`}>
-        <span className="flex items-center gap-2">
-          <span className="text-2xl">{icon}</span>
-          {title}
-        </span>
-        <span className="text-sm font-normal">({challenges.length})</span>
-      </div>
-      
-      <div className="p-4 max-h-[600px] overflow-y-auto space-y-1">
-        {challenges.length === 0 ? (
-          <p className="text-gray-500 text-center py-8 text-sm">No {title.toLowerCase()} challenges yet</p>
-        ) : (
-          challenges.map(challenge => <ChallengeCard key={challenge.id} challenge={challenge} />)
-        )}
-      </div>
-    </div>
   )
 }

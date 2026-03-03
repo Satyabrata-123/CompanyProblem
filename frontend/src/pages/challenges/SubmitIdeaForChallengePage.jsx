@@ -20,9 +20,6 @@ export default function SubmitIdeaForChallengePage() {
   })
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
-  const [analyzing, setAnalyzing] = useState(false)
-  const [aiResult, setAiResult] = useState(null)
-  const [showResults, setShowResults] = useState(false)
   const [errors, setErrors] = useState({})
 
   useEffect(() => {
@@ -32,24 +29,7 @@ export default function SubmitIdeaForChallengePage() {
   const loadChallenge = async () => {
     try {
       setLoading(true)
-      let challengeData = null
-      
-      // Try difficulty-based endpoints first
-      try {
-        challengeData = await api.getChallengeByIdAndDifficulty('BEGINNER', challengeId)
-      } catch (e) {
-        try {
-          challengeData = await api.getChallengeByIdAndDifficulty('INTERMEDIATE', challengeId)
-        } catch (e2) {
-          try {
-            challengeData = await api.getChallengeByIdAndDifficulty('EXPERT', challengeId)
-          } catch (e3) {
-            // Try generic endpoint as fallback
-            challengeData = await api.getChallengeById(challengeId)
-          }
-        }
-      }
-      
+      const challengeData = await api.getChallengeById(challengeId)
       setChallenge(challengeData)
     } catch (error) {
       console.error('Failed to load challenge:', error)
@@ -96,72 +76,25 @@ export default function SubmitIdeaForChallengePage() {
     if (!validate()) return
 
     setSubmitting(true)
-    setAnalyzing(true)
-    setShowResults(false)
 
     try {
       const ideaData = {
         challengeId,
-        challengeDifficulty: challenge.difficulty,
         userId: currentUser.id,
         userName: currentUser.fullName,
         ...formData,
         status: 'SUBMITTED'
       }
 
-      // Submit the idea
-      const submittedIdea = await api.submitIdeaForChallenge(ideaData)
+      await api.submitIdeaForChallenge(ideaData)
 
-      // Show analyzing message
       addNotification({
-        type: 'info',
-        message: 'Analyzing your submission with AI...'
+        type: 'success',
+        message: 'Idea submitted successfully!'
       })
 
-      // Wait a bit for backend AI processing (it happens via Kafka)
-      await new Promise(resolve => setTimeout(resolve, 3000))
-
-      // Try to get AI comparison result
-      try {
-        // The AI comparison should have been triggered by backend
-        // For now, we'll call it directly from frontend
-        const comparisonRequest = {
-          ideaId: submittedIdea.id,
-          ideaTitle: formData.title,
-          ideaDescription: formData.description + '\n\nApproach: ' + formData.approach,
-          challengeId: challengeId,
-          challengeTitle: challenge.title,
-          challengeDescription: challenge.description,
-          companySolution: challenge.internalSolutionBrief || 'No solution brief available'
-        }
-
-        const aiComparison = await api.post('/ai/compare-solution', comparisonRequest)
-        setAiResult(aiComparison)
-        setShowResults(true)
-        setAnalyzing(false)
-
-        addNotification({
-          type: 'success',
-          message: 'Idea submitted and analyzed successfully!'
-        })
-      } catch (aiError) {
-        console.error('AI comparison failed:', aiError)
-        setAnalyzing(false)
-        setShowResults(false)
-        
-        addNotification({
-          type: 'success',
-          message: 'Idea submitted successfully! AI analysis pending.'
-        })
-        
-        // Still navigate after a delay
-        setTimeout(() => {
-          navigate(`/challenges/${challengeId}`)
-        }, 2000)
-      }
-
+      navigate(`/challenges/${challengeId}`)
     } catch (error) {
-      setAnalyzing(false)
       setErrors({ submit: error.message || 'Failed to submit idea. Please try again.' })
     } finally {
       setSubmitting(false)
@@ -293,128 +226,19 @@ export default function SubmitIdeaForChallengePage() {
               type="button"
               onClick={() => navigate(`/challenges/${challengeId}`)}
               className="btn-secondary"
-              disabled={submitting || analyzing}
+              disabled={submitting}
             >
               Cancel
             </button>
             <button
               type="submit"
               className="btn-primary"
-              disabled={submitting || analyzing}
+              disabled={submitting}
             >
               {submitting ? 'Submitting...' : 'Submit Idea'}
             </button>
           </div>
         </form>
-
-        {/* AI Analysis Progress */}
-        {analyzing && (
-          <div className="mt-6 bg-white rounded-lg shadow p-8">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-primary-600 mx-auto mb-4"></div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Analyzing Your Submission...</h3>
-              <p className="text-gray-600 mb-4">Our AI is comparing your idea with the company's solution</p>
-              <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-                <div className="bg-primary-600 h-2 rounded-full animate-pulse" style={{width: '75%'}}></div>
-              </div>
-              <p className="text-sm text-gray-500">This may take a few moments...</p>
-            </div>
-          </div>
-        )}
-
-        {/* AI Results Display */}
-        {showResults && aiResult && (
-          <div className="mt-6 bg-white rounded-lg shadow overflow-hidden">
-            <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-6 text-white">
-              <h2 className="text-2xl font-bold mb-2">🤖 AI Analysis Results</h2>
-              <p className="text-purple-100">Your submission has been analyzed and scored</p>
-            </div>
-
-            <div className="p-6 space-y-6">
-              {/* Match Score */}
-              <div className="text-center py-6 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg">
-                <div className="text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-2">
-                  {aiResult.matchScore}%
-                </div>
-                <div className={`inline-block px-4 py-2 rounded-full text-white font-semibold ${
-                  aiResult.matchLevel === 'EXCELLENT' ? 'bg-green-500' :
-                  aiResult.matchLevel === 'GOOD' ? 'bg-blue-500' :
-                  aiResult.matchLevel === 'PARTIAL' ? 'bg-yellow-500' : 'bg-red-500'
-                }`}>
-                  {aiResult.matchLevel} Match
-                </div>
-              </div>
-
-              {/* AI Detection Warning */}
-              {aiResult.aiDetected && (
-                <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4">
-                  <div className="flex items-start">
-                    <span className="text-3xl mr-3">⚠️</span>
-                    <div>
-                      <h3 className="text-lg font-bold text-red-900 mb-2">AI-Generated Content Detected</h3>
-                      <p className="text-red-800 mb-2">{aiResult.aiDetectionReason}</p>
-                      {aiResult.penaltyApplied && (
-                        <p className="text-sm text-red-700 font-semibold">
-                          ⚡ Score penalty applied for AI-generated content
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Feedback */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">📝 Feedback</h3>
-                <p className="text-gray-700 bg-gray-50 p-4 rounded-lg">{aiResult.feedback}</p>
-              </div>
-
-              {/* Strengths */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">💪 Strengths</h3>
-                <p className="text-gray-700 bg-green-50 p-4 rounded-lg border-l-4 border-green-500">
-                  {aiResult.strengths}
-                </p>
-              </div>
-
-              {/* Improvements */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">🎯 Areas for Improvement</h3>
-                <p className="text-gray-700 bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-500">
-                  {aiResult.improvements}
-                </p>
-              </div>
-
-              {/* Qualification Status */}
-              <div className={`p-4 rounded-lg ${
-                aiResult.isCorrectSolution ? 'bg-green-50 border-2 border-green-300' : 'bg-gray-50 border-2 border-gray-300'
-              }`}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {aiResult.isCorrectSolution ? '✅ Qualifies for Reward' : '❌ Does Not Qualify for Reward'}
-                    </h3>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {aiResult.isCorrectSolution 
-                        ? 'Your solution meets the minimum threshold (70%) for rewards!' 
-                        : 'Score must be 70% or higher to qualify for rewards'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Button */}
-              <div className="flex justify-center pt-4">
-                <button
-                  onClick={() => navigate(`/challenges/${challengeId}`)}
-                  className="btn-primary px-8"
-                >
-                  View Challenge Details
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </Layout>
   )

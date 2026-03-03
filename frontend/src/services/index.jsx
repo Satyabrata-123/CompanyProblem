@@ -3,7 +3,6 @@ import { UserService } from './user-service'
 import { IdeaService } from './idea-service'
 import { VotingService } from './voting-service'
 import { GamificationService } from './gamification-service'
-import { CompanyService } from './company-service'
 
 // Create API client instance
 const apiClient = new ApiClient()
@@ -13,7 +12,6 @@ export const userService = new UserService(apiClient)
 export const ideaService = new IdeaService(apiClient)
 export const votingService = new VotingService(apiClient)
 export const gamificationService = new GamificationService(apiClient)
-export const companyService = new CompanyService(apiClient)
 
 // Export API client for direct use
 export const api = apiClient
@@ -24,6 +22,5 @@ export default {
   users: userService,
   ideas: ideaService,
   voting: votingService,
-  gamification: gamificationService,
-  companies: companyService
+  gamification: gamificationService
 }

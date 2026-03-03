@@ -6,7 +6,7 @@ import Layout from '../../components/layout/Layout'
 import { api } from '../../services'
 
 export default function CreateChallengePage() {
-  const { currentCompany } = useAuth()
+  const { currentUser } = useAuth()
   const navigate = useNavigate()
   const { addNotification } = useNotification()
 
@@ -19,7 +19,6 @@ export default function CreateChallengePage() {
     rewardAmount: '',
     rewardCurrency: 'USD',
     submissionDeadline: '',
-    submissionDeadlineTime: '23:59',
     maxSubmissions: '',
     evaluationCriteria: ''
   })
@@ -70,22 +69,15 @@ export default function CreateChallengePage() {
     setLoading(true)
 
     try {
-      // Combine date and time for the deadline
-      const deadlineDateTime = `${formData.submissionDeadline}T${formData.submissionDeadlineTime}:00`
-
       const challengeData = {
         ...formData,
-        submissionDeadline: deadlineDateTime,
-        companyId: currentCompany?.id || 'demo-company',
-        companyName: currentCompany?.name || 'Demo Company',
+        companyId: currentUser.companyId || 'demo-company',
+        companyName: currentUser.companyName || 'Demo Company',
         isActive: true,
         submissionCount: 0,
         rewardAmount: formData.rewardAmount ? parseFloat(formData.rewardAmount) : null,
         maxSubmissions: formData.maxSubmissions ? parseInt(formData.maxSubmissions) : null
       }
-
-      // Remove the time field before sending
-      delete challengeData.submissionDeadlineTime
 
       await api.createChallenge(challengeData, formData.evaluationCriteria)
 
@@ -122,7 +114,7 @@ export default function CreateChallengePage() {
           {/* Basic Information */}
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
-
+            
             <div className="space-y-4">
               <div>
                 <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
@@ -141,7 +133,7 @@ export default function CreateChallengePage() {
                 {errors.title && <p className="text-sm text-danger-600 mt-1">{errors.title}</p>}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label htmlFor="difficulty" className="block text-sm font-medium text-gray-700 mb-2">
                     Difficulty *
@@ -181,7 +173,7 @@ export default function CreateChallengePage() {
 
                 <div>
                   <label htmlFor="submissionDeadline" className="block text-sm font-medium text-gray-700 mb-2">
-                    Deadline Date *
+                    Deadline *
                   </label>
                   <input
                     id="submissionDeadline"
@@ -195,20 +187,6 @@ export default function CreateChallengePage() {
                   {errors.submissionDeadline && (
                     <p className="text-sm text-danger-600 mt-1">{errors.submissionDeadline}</p>
                   )}
-                </div>
-
-                <div>
-                  <label htmlFor="submissionDeadlineTime" className="block text-sm font-medium text-gray-700 mb-2">
-                    Deadline Time
-                  </label>
-                  <input
-                    id="submissionDeadlineTime"
-                    name="submissionDeadlineTime"
-                    type="time"
-                    className="input"
-                    value={formData.submissionDeadlineTime}
-                    onChange={handleChange}
-                  />
                 </div>
               </div>
 
@@ -267,7 +245,7 @@ export default function CreateChallengePage() {
           {/* Reward & Limits */}
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Reward & Limits</h3>
-
+            
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label htmlFor="rewardAmount" className="block text-sm font-medium text-gray-700 mb-2">

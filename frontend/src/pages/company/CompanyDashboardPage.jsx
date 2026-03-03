@@ -6,7 +6,7 @@ import Layout from '../../components/layout/Layout'
 import { api } from '../../services'
 
 export default function CompanyDashboardPage() {
-  const { currentCompany } = useAuth()
+  const { currentUser } = useAuth()
   const { addNotification } = useNotification()
   
   const [challenges, setChallenges] = useState([])
@@ -27,10 +27,10 @@ export default function CompanyDashboardPage() {
       setLoading(true)
       
       // Load company challenges
-      const allChallenges = currentCompany?.id 
+      const allChallenges = currentCompany?.id
         ? await api.getChallengesByCompany(currentCompany.id).catch(() => [])
         : await api.getAllChallenges().catch(() => [])
-      
+
       setChallenges(allChallenges)
       
       // Calculate stats
