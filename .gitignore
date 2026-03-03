@@ -1,6 +1,7 @@
 # Maven build output
-/target/
-
+**/target/
+*.class
+*.jar
 # Environment variables
 .env
 
