@@ -144,6 +144,18 @@ public class ChallengeController {
         return ResponseEntity.ok(difficultyBasedChallengeService.getIdeasByUser(userId));
     }
 
+    @DeleteMapping("/ideas/{ideaId}")
+    public ResponseEntity<Void> deleteIdeaSubmission(@PathVariable UUID ideaId) {
+        try {
+            difficultyBasedChallengeService.deleteIdeaSubmission(ideaId);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            System.err.println("Error deleting idea: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
     // Get challenge by ID with difficulty
     @GetMapping("/{difficulty}/{id}")
     public ResponseEntity<ChallengeDTO> getChallengeByIdAndDifficulty(

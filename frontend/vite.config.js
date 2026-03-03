@@ -1,14 +1,16 @@
 import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 
+// https://vitejs.dev/config/
 export default defineConfig({
+  plugins: [react()],
   build: {
     outDir: 'dist',
     sourcemap: true,
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['./src/services/api-client.js'],
-          utils: ['./src/utils/date-utils.js', './src/utils/validation-utils.js']
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
         }
       }
     }
@@ -18,8 +20,12 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: 'http://localhost:8080',
-        changeOrigin: true
+        changeOrigin: true,
+        secure: false
       }
     }
+  },
+  preview: {
+    port: 3000
   }
 })

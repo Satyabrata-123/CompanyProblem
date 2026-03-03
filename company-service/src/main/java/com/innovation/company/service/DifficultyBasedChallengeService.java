@@ -316,6 +316,14 @@ public class DifficultyBasedChallengeService {
                 .stream().map(this::convertIdeaToDTO).toList();
     }
 
+    public void deleteIdeaSubmission(UUID ideaId) {
+        ChallengeIdea idea = challengeIdeaRepository.findById(ideaId)
+                .orElseThrow(() -> new RuntimeException("Idea submission not found"));
+        
+        challengeIdeaRepository.delete(idea);
+        System.out.println("Deleted idea submission: " + ideaId);
+    }
+
     public String getChallengeSolution(UUID challengeId, String difficulty) {
         return switch (difficulty.toUpperCase()) {
             case "BEGINNER" -> beginnerRepository.findById(challengeId)
