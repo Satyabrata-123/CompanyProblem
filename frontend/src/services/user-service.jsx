@@ -115,16 +115,21 @@ export class UserService {
 
   async authenticateUser(email) {
     try {
+      console.log('🔍 Attempting to authenticate user:', email)
       const user = await this.getUserByEmail(email)
+      console.log('✅ User authentication successful:', user)
 
       // Store user in state
-      window.app.state.setUser(user)
+      if (window.app && window.app.state) {
+        window.app.state.setUser(user)
+      }
 
       // Load user's additional data in background (non-blocking)
       this.loadUserDataInBackground(user.id)
 
       return user
     } catch (error) {
+      console.error('❌ User authentication failed:', error)
       throw new Error('Authentication failed. Please check your email.')
     }
   }

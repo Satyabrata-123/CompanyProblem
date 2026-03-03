@@ -26,49 +26,62 @@ export default function ChallengeDetailPage() {
       setLoading(true)
       setError(null)
 
-      // Try to load challenge from different difficulty levels
-      let challengeData = null
-      let difficulty = null
+      console.log('🔍 Loading challenge:', id)
 
+      // First, try to get the challenge from the generic endpoint
+      let challengeData = null
+      
       try {
-        challengeData = await api.getChallengeByIdAndDifficulty('BEGINNER', id)
-        difficulty = 'BEGINNER'
-      } catch (e) {
-        try {
-          challengeData = await api.getChallengeByIdAndDifficulty('INTERMEDIATE', id)
-          difficulty = 'INTERMEDIATE'
-        } catch (e2) {
+        challengeData = await api.getChallengeById(id)
+        console.log('✅ Challenge loaded from generic endpoint:', challengeData)
+      } catch (genericError) {
+        console.log('⚠️ Generic endpoint failed, trying difficulty-specific endpoints...')
+        
+        // If generic fails, try difficulty-specific endpoints
+        const difficulties = ['BEGINNER', 'INTERMEDIATE', 'EXPERT']
+        
+        for (const diff of difficulties) {
           try {
-            challengeData = await api.getChallengeByIdAndDifficulty('EXPERT', id)
-            difficulty = 'EXPERT'
-          } catch (e3) {
-            // Try generic endpoint
-            challengeData = await api.getChallengeById(id)
-            difficulty = challengeData.difficulty
+            challengeData = await api.getChallengeByIdAndDifficulty(diff, id)
+            console.log(`✅ Challenge loaded from ${diff} endpoint:`, challengeData)
+            break
+          } catch (diffError) {
+            console.log(`❌ ${diff} endpoint failed`)
           }
         }
       }
 
-      challengeData.difficulty = difficulty
+      if (!challengeData) {
+        throw new Error('Challenge not found in any difficulty level')
+      }
+
       setChallenge(challengeData)
 
       // Load solutions
       try {
         const solutionsData = await api.getSolutionsByChallenge(id)
+        console.log('📋 Solutions loaded:', solutionsData?.length || 0)
         setSolutions(solutionsData || [])
 
         // Check if user has submitted
         if (currentUser && solutionsData) {
           const userSol = solutionsData.find(s => s.submittedBy === currentUser.id)
-          setUserSolution(userSol)
+          if (userSol) {
+            console.log('👤 User solution found:', userSol)
+            setUserSolution(userSol)
+          }
         }
       } catch (err) {
-        console.warn('Failed to load solutions:', err)
+        console.warn('⚠️ Failed to load solutions:', err)
         setSolutions([])
       }
     } catch (err) {
-      console.error('Failed to load challenge:', err)
+      console.error('❌ Failed to load challenge:', err)
       setError(err.message || 'Challenge not found')
+      addNotification({
+        type: 'error',
+        message: 'Failed to load challenge'
+      })
     } finally {
       setLoading(false)
     }

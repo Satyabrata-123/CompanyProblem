@@ -8,7 +8,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const navigate = useNavigate()
-  const { login } = useAuth()
+  const { login, userType } = useAuth()
   const { addNotification } = useNotification()
 
   const validateEmail = (email) => {
@@ -34,12 +34,41 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      const user = await login(email)
-      addNotification({
-        type: 'success',
-        message: `Welcome back, ${user.fullName}!`
-      })
-      navigate('/dashboard')
+      const result = await login(email)
+      
+      // Check if it's a user or company based on the result structure
+      if (result.fullName) {
+        // It's a user - check if admin
+        if (result.role === 'admin') {
+          addNotification({
+            type: 'success',
+            message: `Welcome back, Admin ${result.fullName}!`
+          })
+          navigate('/admin')
+        } else {
+          addNotification({
+            type: 'success',
+            message: `Welcome back, ${result.fullName}!`
+          })
+          navigate('/dashboard')
+        }
+      } else if (result.name) {
+        // It's a company
+        addNotification({
+          type: 'success',
+          message: `Welcome back, ${result.name}!`
+        })
+        navigate('/company/dashboard')
+      } else {
+        // Fallback - check userType from context
+        setTimeout(() => {
+          if (userType === 'company') {
+            navigate('/company/dashboard')
+          } else {
+            navigate('/dashboard')
+          }
+        }, 100)
+      }
     } catch (err) {
       setError(err.message || 'Login failed. Please try again.')
     } finally {

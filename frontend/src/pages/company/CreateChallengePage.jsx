@@ -1,12 +1,12 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useNotification } from '../../context/NotificationContext'
 import Layout from '../../components/layout/Layout'
 import { api } from '../../services'
 
 export default function CreateChallengePage() {
-  const { currentUser } = useAuth()
+  const { currentCompany, userType } = useAuth()
   const navigate = useNavigate()
   const { addNotification } = useNotification()
 
@@ -24,6 +24,31 @@ export default function CreateChallengePage() {
   })
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState({})
+
+  // Access control - only companies can create challenges
+  if (userType !== 'company' || !currentCompany) {
+    return (
+      <Layout>
+        <div className="max-w-2xl mx-auto py-12 px-4 text-center">
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-8">
+            <div className="text-6xl mb-4">🏢</div>
+            <h2 className="text-2xl font-bold text-orange-800 mb-4">Company Access Required</h2>
+            <p className="text-orange-600 mb-6">
+              Only registered companies can create challenges. Please login with a company account.
+            </p>
+            <div className="space-x-4">
+              <Link to="/company/login" className="btn-primary">
+                Company Login
+              </Link>
+              <Link to="/company/register" className="btn-secondary">
+                Register Company
+              </Link>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    )
+  }
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -66,19 +91,29 @@ export default function CreateChallengePage() {
 
     if (!validate()) return
 
+    // Check if user is a company
+    if (userType !== 'company' || !currentCompany) {
+      setErrors({ submit: 'Only companies can create challenges. Please login with a company account.' })
+      return
+    }
+
     setLoading(true)
 
     try {
       const challengeData = {
         ...formData,
-        companyId: currentUser.companyId || 'demo-company',
-        companyName: currentUser.companyName || 'Demo Company',
+        companyId: currentCompany.id,
+        companyName: currentCompany.name,
         isActive: true,
         submissionCount: 0,
         rewardAmount: formData.rewardAmount ? parseFloat(formData.rewardAmount) : null,
-        maxSubmissions: formData.maxSubmissions ? parseInt(formData.maxSubmissions) : null
+        maxSubmissions: formData.maxSubmissions ? parseInt(formData.maxSubmissions) : null,
+        // Convert date to ISO string format for backend
+        submissionDeadline: formData.submissionDeadline ? `${formData.submissionDeadline}T23:59:59` : null
       }
 
+      console.log('🎯 Creating challenge with data:', challengeData)
+      console.log('🏢 Current company:', currentCompany)
       await api.createChallenge(challengeData, formData.evaluationCriteria)
 
       addNotification({
@@ -88,6 +123,7 @@ export default function CreateChallengePage() {
 
       navigate('/company/dashboard')
     } catch (error) {
+      console.error('❌ Challenge creation failed:', error)
       setErrors({ submit: error.message || 'Failed to create challenge. Please try again.' })
     } finally {
       setLoading(false)

@@ -24,25 +24,36 @@ export default function IdeaDetailPage() {
   const loadIdeaDetails = async () => {
     try {
       setLoading(true)
+      console.log('🔍 Loading idea details for ID:', id)
+      
       const [ideaData, commentsData] = await Promise.all([
         api.getIdeaById(id),
-        api.getCommentsForIdea(id).catch(() => [])
+        api.getCommentsForIdea(id).catch((err) => {
+          console.warn('⚠️ Failed to load comments:', err)
+          return []
+        })
       ])
 
+      console.log('✅ Idea loaded:', ideaData)
+      console.log('💬 Comments loaded:', commentsData.length)
+      
       setIdea(ideaData)
       setComments(commentsData)
 
       // Check if user has voted
       if (currentUser) {
         try {
+          console.log('🗳️ Checking user vote...')
           const vote = await api.getUserVoteForIdea(id, currentUser.id)
+          console.log('✅ User vote found:', vote)
           setUserVote(vote)
         } catch (error) {
+          console.log('ℹ️ No existing vote found')
           setUserVote(null)
         }
       }
     } catch (error) {
-      console.error('Failed to load idea:', error)
+      console.error('❌ Failed to load idea:', error)
       addNotification({
         type: 'error',
         message: 'Failed to load idea details'
@@ -63,70 +74,115 @@ export default function IdeaDetailPage() {
     }
 
     try {
+      console.log('🗳️ Voting action:', { voteType, ideaId: id, userId: currentUser.id, hasExistingVote: !!userVote })
+      
       if (userVote) {
         // Remove vote
+        console.log('🗑️ Removing existing vote...')
         await api.removeVote(id, currentUser.id)
         setUserVote(null)
         setIdea(prev => ({ ...prev, voteCount: (prev.voteCount || 0) - 1 }))
+        console.log('✅ Vote removed successfully')
+        
+        addNotification({
+          type: 'success',
+          message: 'Vote removed'
+        })
       } else {
         // Cast vote
-        await api.castVote({
+        console.log('➕ Casting new vote...')
+        const voteData = {
           ideaId: id,
           userId: currentUser.id,
-          voteType
-        })
-        setUserVote({ voteType })
+          voteType: 1  // 1 for upvote (integer, not string)
+        }
+        console.log('Vote data:', voteData)
+        
+        await api.castVote(voteData)
+        setUserVote({ voteType: 1 })
         setIdea(prev => ({ ...prev, voteCount: (prev.voteCount || 0) + 1 }))
+        console.log('✅ Vote cast successfully')
+        
+        addNotification({
+          type: 'success',
+          message: 'Vote recorded'
+        })
 
         // Award points
         try {
+          console.log('🎁 Awarding points for vote...')
           await api.awardPointsForVote(currentUser.id)
+          console.log('✅ Points awarded')
         } catch (error) {
-          console.warn('Failed to award points:', error)
+          console.warn('⚠️ Failed to award points:', error)
         }
       }
     } catch (error) {
+      console.error('❌ Vote failed:', error)
       addNotification({
         type: 'error',
-        message: 'Failed to vote'
+        message: error.message || 'Failed to vote. Please try again.'
       })
     }
   }
 
   const handleCommentSubmit = async (e) => {
     e.preventDefault()
-    if (!newComment.trim()) return
+    
+    if (!currentUser) {
+      addNotification({
+        type: 'warning',
+        message: 'Please login to comment'
+      })
+      return
+    }
+    
+    if (!newComment.trim()) {
+      addNotification({
+        type: 'warning',
+        message: 'Comment cannot be empty'
+      })
+      return
+    }
 
     try {
       const commentData = {
         ideaId: id,
         userId: currentUser.id,
         userName: currentUser.fullName,
-        content: newComment
+        content: newComment.trim()
       }
 
+      console.log('💬 Submitting comment:', commentData)
       await api.addComment(commentData)
+      console.log('✅ Comment added successfully')
+      
       setNewComment('')
       
       // Reload comments
+      console.log('🔄 Reloading comments...')
       const updatedComments = await api.getCommentsForIdea(id)
       setComments(updatedComments)
+      console.log('✅ Comments reloaded:', updatedComments.length)
 
       addNotification({
         type: 'success',
-        message: 'Comment added'
+        message: 'Comment added successfully'
       })
 
       // Award points
       try {
+        console.log('🎁 Awarding points for comment...')
         await api.awardPointsForComment(currentUser.id)
+        console.log('✅ Points awarded')
       } catch (error) {
-        console.warn('Failed to award points:', error)
+        console.warn('⚠️ Failed to award points:', error)
       }
     } catch (error) {
+      console.error('❌ Comment submission failed:', error)
       addNotification({
         type: 'error',
-        message: 'Failed to add comment'
+        message: error.message || 'Failed to add comment. Please try again.'
       })
     }
   }

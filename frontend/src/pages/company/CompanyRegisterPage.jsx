@@ -16,6 +16,7 @@ export default function CompanyRegisterPage() {
     description: '',
     contactEmail: '',
     contactPhone: '',
+    contactPerson: '',
     address: ''
   })
   const [loading, setLoading] = useState(false)
@@ -50,6 +51,10 @@ export default function CompanyRegisterPage() {
       newErrors.contactEmail = 'Valid email is required'
     }
 
+    if (!formData.contactPerson || formData.contactPerson.trim().length < 2) {
+      newErrors.contactPerson = 'Contact person name is required'
+    }
+
     if (!formData.description || formData.description.trim().length < 20) {
       newErrors.description = 'Description must be at least 20 characters'
     }
@@ -66,7 +71,23 @@ export default function CompanyRegisterPage() {
     setLoading(true)
 
     try {
-      await api.createCompany(formData)
+      // Map frontend field names to backend expected field names
+      const companyData = {
+        name: formData.name,
+        description: formData.description,
+        email: formData.contactEmail, // Map contactEmail to email
+        phone: formData.contactPhone, // Map contactPhone to phone
+        website: formData.website,
+        industry: formData.industry,
+        size: formData.size,
+        address: formData.address,
+        contactPerson: formData.contactPerson, // Use the actual contact person field
+        isVerified: false,
+        isActive: true
+      }
+
+      console.log('🏢 Submitting company data:', companyData)
+      await api.createCompany(companyData)
       
       setSuccess(true)
       addNotification({
@@ -78,6 +99,7 @@ export default function CompanyRegisterPage() {
         navigate('/challenges')
       }, 3000)
     } catch (error) {
+      console.error('❌ Company registration failed:', error)
       setErrors({ submit: error.message || 'Failed to register company. Please try again.' })
     } finally {
       setLoading(false)
@@ -253,6 +275,23 @@ export default function CompanyRegisterPage() {
                     onChange={handleChange}
                   />
                   {errors.contactEmail && <p className="text-sm text-danger-600 mt-1">{errors.contactEmail}</p>}
+                </div>
+
+                <div>
+                  <label htmlFor="contactPerson" className="block text-sm font-medium text-gray-700 mb-2">
+                    Contact Person *
+                  </label>
+                  <input
+                    id="contactPerson"
+                    name="contactPerson"
+                    type="text"
+                    required
+                    className={`input ${errors.contactPerson ? 'input-error' : ''}`}
+                    placeholder="John Doe"
+                    value={formData.contactPerson}
+                    onChange={handleChange}
+                  />
+                  {errors.contactPerson && <p className="text-sm text-danger-600 mt-1">{errors.contactPerson}</p>}
                 </div>
 
                 <div>

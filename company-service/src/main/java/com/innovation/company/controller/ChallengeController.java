@@ -97,6 +97,24 @@ public class ChallengeController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ChallengeDTO> getChallengeById(@PathVariable UUID id) {
+        // Try to find challenge in difficulty-based tables first
+        try {
+            // Try each difficulty level
+            for (String difficulty : new String[]{"BEGINNER", "INTERMEDIATE", "EXPERT"}) {
+                try {
+                    ChallengeDTO challenge = difficultyBasedChallengeService.getChallengeById(id, difficulty);
+                    if (challenge != null) {
+                        return ResponseEntity.ok(challenge);
+                    }
+                } catch (Exception e) {
+                    // Continue to next difficulty
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error finding challenge in difficulty tables: " + e.getMessage());
+        }
+        
+        // Fallback to generic challenge service
         return ResponseEntity.ok(challengeService.getChallengeById(id));
     }
 

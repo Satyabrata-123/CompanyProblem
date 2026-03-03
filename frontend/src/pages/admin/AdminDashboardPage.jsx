@@ -1,22 +1,44 @@
 import React, { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useNotification } from '../../context/NotificationContext'
 import Layout from '../../components/layout/Layout'
 import { api } from '../../services'
 
 export default function AdminDashboardPage() {
-  const { currentUser } = useAuth()
+  const { currentUser, userType } = useAuth()
   const { addNotification } = useNotification()
   
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalIdeas: 0,
     totalChallenges: 0,
-    totalCompanies: 0
+    totalCompanies: 0,
+    pendingCompanies: 0
   })
   const [users, setUsers] = useState([])
   const [companies, setCompanies] = useState([])
   const [loading, setLoading] = useState(true)
+
+  // Access control - only admin users can access
+  if (userType !== 'user' || !currentUser || currentUser.role !== 'admin') {
+    return (
+      <Layout>
+        <div className="max-w-2xl mx-auto py-12 px-4 text-center">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-8">
+            <div className="text-6xl mb-4">🔒</div>
+            <h2 className="text-2xl font-bold text-red-800 mb-4">Admin Access Required</h2>
+            <p className="text-red-600 mb-6">
+              This dashboard is only accessible to platform administrators.
+            </p>
+            <Link to="/dashboard" className="btn-primary">
+              Go to Dashboard
+            </Link>
+          </div>
+        </div>
+      </Layout>
+    )
+  }
 
   useEffect(() => {
     loadAdminData()
@@ -37,7 +59,8 @@ export default function AdminDashboardPage() {
         totalUsers: allUsers.length,
         totalIdeas: allIdeas.length,
         totalChallenges: allChallenges.length,
-        totalCompanies: allCompanies.length
+        totalCompanies: allCompanies.length,
+        pendingCompanies: allCompanies.filter(c => !c.isVerified).length
       })
 
       setUsers(allUsers)
@@ -84,7 +107,9 @@ export default function AdminDashboardPage() {
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="mt-2 text-gray-600">Manage platform users and companies</p>
+          <p className="mt-2 text-gray-600">
+            Manage platform users and companies • Logged in as: {currentUser?.fullName} (Admin)
+          </p>
         </div>
 
         {/* Stats Grid */}
@@ -133,6 +158,11 @@ export default function AdminDashboardPage() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Total Companies</p>
                 <p className="text-2xl font-semibold text-gray-900">{stats.totalCompanies}</p>
+                {stats.pendingCompanies > 0 && (
+                  <p className="text-xs text-orange-600 mt-1">
+                    {stats.pendingCompanies} pending verification
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -144,7 +174,7 @@ export default function AdminDashboardPage() {
             <h2 className="text-lg font-semibold text-gray-900">Pending Company Verifications</h2>
           </div>
           
-          {companies.filter(c => !c.verified).length === 0 ? (
+          {companies.filter(c => !c.isVerified).length === 0 ? (
             <div className="p-6 text-center text-gray-500">
               No pending verifications
             </div>
@@ -156,24 +186,29 @@ export default function AdminDashboardPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Company</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Industry</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Size</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {companies.filter(c => !c.verified).map(company => (
+                  {companies.filter(c => !c.isVerified).map(company => (
                     <tr key={company.id}>
                       <td className="px-6 py-4">
                         <div className="text-sm font-medium text-gray-900">{company.name}</div>
-                        <div className="text-sm text-gray-500">{company.contactEmail}</div>
+                        <div className="text-sm text-gray-500">{company.email}</div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500">{company.industry}</td>
                       <td className="px-6 py-4 text-sm text-gray-500">{company.size}</td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-900">{company.contactPerson}</div>
+                        <div className="text-sm text-gray-500">{company.phone}</div>
+                      </td>
                       <td className="px-6 py-4 text-sm">
                         <button
                           onClick={() => handleVerifyCompany(company.id)}
                           className="text-green-600 hover:text-green-900 font-medium"
                         >
-                          Verify
+                          ✓ Verify
                         </button>
                       </td>
                     </tr>

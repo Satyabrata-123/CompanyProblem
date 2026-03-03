@@ -31,13 +31,42 @@ export default function SubmitSolutionPage() {
   const loadChallenge = async () => {
     try {
       setLoading(true)
-      const challengeData = await api.getChallengeById(id)
+      
+      console.log('🔍 Loading challenge for solution submission:', id)
+
+      // First, try to get the challenge from the generic endpoint
+      let challengeData = null
+      
+      try {
+        challengeData = await api.getChallengeById(id)
+        console.log('✅ Challenge loaded from generic endpoint:', challengeData)
+      } catch (genericError) {
+        console.log('⚠️ Generic endpoint failed, trying difficulty-specific endpoints...')
+        
+        // If generic fails, try difficulty-specific endpoints
+        const difficulties = ['BEGINNER', 'INTERMEDIATE', 'EXPERT']
+        
+        for (const diff of difficulties) {
+          try {
+            challengeData = await api.getChallengeByIdAndDifficulty(diff, id)
+            console.log(`✅ Challenge loaded from ${diff} endpoint:`, challengeData)
+            break
+          } catch (diffError) {
+            console.log(`❌ ${diff} endpoint failed`)
+          }
+        }
+      }
+
+      if (!challengeData) {
+        throw new Error('Challenge not found in any difficulty level')
+      }
+
       setChallenge(challengeData)
     } catch (error) {
-      console.error('Failed to load challenge:', error)
+      console.error('❌ Failed to load challenge:', error)
       addNotification({
         type: 'error',
-        message: 'Failed to load challenge'
+        message: 'Failed to load challenge. Please try again.'
       })
       navigate('/challenges')
     } finally {
@@ -77,6 +106,15 @@ export default function SubmitSolutionPage() {
 
     if (!validate()) return
 
+    if (!currentUser) {
+      addNotification({
+        type: 'error',
+        message: 'You must be logged in to submit a solution'
+      })
+      navigate('/login')
+      return
+    }
+
     setSubmitting(true)
 
     try {
@@ -89,13 +127,16 @@ export default function SubmitSolutionPage() {
         voteCount: 0
       }
 
+      console.log('📤 Submitting solution:', solutionData)
       await api.submitSolution(solutionData)
+      console.log('✅ Solution submitted successfully')
 
       // Increment challenge submission count
       try {
         await api.incrementChallengeSubmissions(id)
+        console.log('✅ Challenge submission count incremented')
       } catch (err) {
-        console.warn('Failed to increment submission count:', err)
+        console.warn('⚠️ Failed to increment submission count:', err)
       }
 
       addNotification({
@@ -105,7 +146,12 @@ export default function SubmitSolutionPage() {
 
       navigate(`/challenges/${id}`)
     } catch (error) {
+      console.error('❌ Solution submission failed:', error)
       setErrors({ submit: error.message || 'Failed to submit solution. Please try again.' })
+      addNotification({
+        type: 'error',
+        message: error.message || 'Failed to submit solution'
+      })
     } finally {
       setSubmitting(false)
     }

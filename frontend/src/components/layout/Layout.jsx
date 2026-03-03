@@ -3,12 +3,23 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 
 export default function Layout({ children }) {
-  const { currentUser, isAuthenticated, logout } = useAuth()
+  const { currentUser, currentCompany, userType, isAuthenticated, logout } = useAuth()
   const navigate = useNavigate()
 
   const handleLogout = () => {
     logout()
     navigate('/login')
+  }
+
+  // Get the display name based on user type
+  const displayName = userType === 'company' ? currentCompany?.name : currentUser?.fullName
+  
+  // Determine dashboard link based on user type and role
+  let dashboardLink = '/dashboard'
+  if (userType === 'company') {
+    dashboardLink = '/company/dashboard'
+  } else if (currentUser?.role === 'admin') {
+    dashboardLink = '/admin'
   }
 
   return (
@@ -25,29 +36,49 @@ export default function Layout({ children }) {
               {isAuthenticated && (
                 <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                   <Link
-                    to="/dashboard"
+                    to={dashboardLink}
                     className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 hover:text-purple-600"
                   >
                     Dashboard
                   </Link>
-                  <Link
-                    to="/ideas"
-                    className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-900"
-                  >
-                    Ideas
-                  </Link>
+                  {userType === 'user' && (
+                    <>
+                      <Link
+                        to="/ideas"
+                        className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-900"
+                      >
+                        Ideas
+                      </Link>
+                      <Link
+                        to="/leaderboard"
+                        className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-900"
+                      >
+                        Leaderboard
+                      </Link>
+                      {currentUser?.role === 'admin' && (
+                        <Link
+                          to="/admin"
+                          className="inline-flex items-center px-1 pt-1 text-sm font-medium text-orange-600 hover:text-orange-900"
+                        >
+                          🔧 Admin
+                        </Link>
+                      )}
+                    </>
+                  )}
                   <Link
                     to="/challenges"
                     className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-900"
                   >
                     Challenges
                   </Link>
-                  <Link
-                    to="/leaderboard"
-                    className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-900"
-                  >
-                    Leaderboard
-                  </Link>
+                  {userType === 'company' && (
+                    <Link
+                      to="/company/challenges/create"
+                      className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-900"
+                    >
+                      Create Challenge
+                    </Link>
+                  )}
                 </div>
               )}
             </div>
@@ -56,10 +87,10 @@ export default function Layout({ children }) {
               {isAuthenticated ? (
                 <div className="flex items-center space-x-4">
                   <Link
-                    to="/profile"
+                    to={userType === 'company' ? '/company/dashboard' : '/profile'}
                     className="text-sm font-medium text-gray-700 hover:text-gray-900"
                   >
-                    {currentUser?.fullName}
+                    {displayName}
                   </Link>
                   <button
                     onClick={handleLogout}

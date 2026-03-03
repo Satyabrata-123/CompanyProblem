@@ -59,12 +59,12 @@ echo.
 echo Services:
 echo   - Eureka: http://localhost:8761
 echo   - API Gateway: http://localhost:8080
-echo   - Company Service: http://localhost:8081
+echo   - Idea Service: http://localhost:8081
 echo   - User Service: http://localhost:8082
-echo   - Idea Service: http://localhost:8083
+echo   - Voting Service: http://localhost:8083
 echo   - Gamification Service: http://localhost:8084
 echo   - AI Service: http://localhost:8085
-echo   - Voting Service: http://localhost:8086
+echo   - Company Service: http://localhost:8086
 echo.
 echo Check individual windows for service logs.
 echo.

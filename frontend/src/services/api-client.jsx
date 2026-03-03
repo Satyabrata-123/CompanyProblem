@@ -28,6 +28,8 @@ export class ApiClient {
       ...options
     }
 
+    console.log(`🌐 API Request: ${options.method || 'GET'} ${url}`)
+
     // Create unique request key for deduplication (for POST requests)
     const requestKey = options.method === 'POST' ? 
       `${endpoint}-${JSON.stringify(options.body)}` : 
@@ -52,9 +54,12 @@ export class ApiClient {
 
         const response = await this.makeRequestWithRetry(url, config, this.retryAttempts)
         
+        console.log(`✅ API Response: ${response.status} ${response.statusText}`)
+        
         // Handle different response types
         if (!response.ok) {
           const error = await this.handleErrorResponse(response)
+          console.error(`❌ API Error: ${error.message}`)
           throw error
         }
 
@@ -66,11 +71,14 @@ export class ApiClient {
         // Try to parse JSON, fallback to text
         const contentType = response.headers.get('content-type')
         if (contentType && contentType.includes('application/json')) {
-          return await response.json()
+          const data = await response.json()
+          console.log(`📦 API Data:`, data)
+          return data
         } else {
           return await response.text()
         }
       } catch (error) {
+        console.error(`❌ API Request Failed: ${error.message}`)
         if (error.name === 'TypeError' && error.message.includes('fetch')) {
           // Network error
           if (!this.isOnline) {

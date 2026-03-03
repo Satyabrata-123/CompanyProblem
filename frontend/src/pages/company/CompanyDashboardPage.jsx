@@ -6,7 +6,7 @@ import Layout from '../../components/layout/Layout'
 import { api } from '../../services'
 
 export default function CompanyDashboardPage() {
-  const { currentUser } = useAuth()
+  const { currentCompany, userType } = useAuth()
   const { addNotification } = useNotification()
   
   const [challenges, setChallenges] = useState([])
@@ -18,6 +18,31 @@ export default function CompanyDashboardPage() {
   })
   const [loading, setLoading] = useState(true)
 
+  // Access control - only companies can access this dashboard
+  if (userType !== 'company' || !currentCompany) {
+    return (
+      <Layout>
+        <div className="max-w-2xl mx-auto py-12 px-4 text-center">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-8">
+            <div className="text-6xl mb-4">🚫</div>
+            <h2 className="text-2xl font-bold text-red-800 mb-4">Access Denied</h2>
+            <p className="text-red-600 mb-6">
+              This dashboard is only accessible to registered companies.
+            </p>
+            <div className="space-x-4">
+              <Link to="/company/login" className="btn-primary">
+                Company Login
+              </Link>
+              <Link to="/company/register" className="btn-secondary">
+                Register Company
+              </Link>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    )
+  }
+
   useEffect(() => {
     loadDashboardData()
   }, [])
@@ -26,25 +51,54 @@ export default function CompanyDashboardPage() {
     try {
       setLoading(true)
       
+      console.log('🔄 Loading company dashboard data for:', currentCompany?.name)
+      
       // Load company challenges
       const allChallenges = currentCompany?.id
         ? await api.getChallengesByCompany(currentCompany.id).catch(() => [])
         : await api.getAllChallenges().catch(() => [])
 
+      console.log('📋 Loaded challenges:', allChallenges.length)
       setChallenges(allChallenges)
+      
+      // Load solutions for each challenge to get accurate counts
+      let totalSubmissionsCount = 0
+      const challengesWithSolutions = await Promise.all(
+        allChallenges.map(async (challenge) => {
+          try {
+            const solutions = await api.getSolutionsByChallenge(challenge.id)
+            const solutionCount = solutions?.length || 0
+            totalSubmissionsCount += solutionCount
+            return {
+              ...challenge,
+              actualSubmissionCount: solutionCount
+            }
+          } catch (err) {
+            console.warn(`Failed to load solutions for challenge ${challenge.id}:`, err)
+            return {
+              ...challenge,
+              actualSubmissionCount: challenge.currentSubmissions || 0
+            }
+          }
+        })
+      )
+
+      console.log('✅ Total submissions across all challenges:', totalSubmissionsCount)
+      
+      // Update challenges with actual submission counts
+      setChallenges(challengesWithSolutions)
       
       // Calculate stats
       const activeChallenges = allChallenges.filter(c => c.isActive).length
-      const totalSubmissions = allChallenges.reduce((sum, c) => sum + (c.submissionCount || 0), 0)
       
       setStats({
         totalChallenges: allChallenges.length,
         activeChallenges,
-        totalSubmissions,
-        totalSolutions: totalSubmissions
+        totalSubmissions: totalSubmissionsCount,
+        totalSolutions: totalSubmissionsCount
       })
     } catch (error) {
-      console.error('Failed to load dashboard data:', error)
+      console.error('❌ Failed to load dashboard data:', error)
       addNotification({
         type: 'error',
         message: 'Failed to load dashboard data'
@@ -86,12 +140,23 @@ export default function CompanyDashboardPage() {
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Company Dashboard</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Welcome, {currentCompany?.name}
+            </h1>
             <p className="mt-2 text-gray-600">Manage your challenges and view submissions</p>
           </div>
-          <Link to="/company/challenges/create" className="btn-primary">
-            Create New Challenge
-          </Link>
+          <div className="flex gap-3">
+            <button
+              onClick={loadDashboardData}
+              className="btn-secondary flex items-center gap-2"
+              disabled={loading}
+            >
+              🔄 Refresh
+            </button>
+            <Link to="/company/challenges/create" className="btn-primary">
+              Create New Challenge
+            </Link>
+          </div>
         </div>
 
         {/* Stats Grid */}
@@ -195,7 +260,9 @@ export default function CompanyDashboardPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {challenge.submissionCount || 0}
+                        {challenge.actualSubmissionCount !== undefined 
+                          ? challenge.actualSubmissionCount 
+                          : (challenge.currentSubmissions || 0)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`badge ${challenge.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>

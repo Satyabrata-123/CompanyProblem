@@ -5,7 +5,7 @@ import { api } from '../../services'
 import Layout from '../../components/layout/Layout'
 
 export default function DashboardPage() {
-    const { currentUser } = useAuth()
+    const { currentUser, userType } = useAuth()
     const [stats, setStats] = useState({
         totalIdeas: 0,
         userPoints: 0,
@@ -15,6 +15,31 @@ export default function DashboardPage() {
         activeChallenges: 0
     })
     const [loading, setLoading] = useState(true)
+
+    // Access control - only users can access this dashboard
+    if (userType !== 'user' || !currentUser) {
+        return (
+            <Layout>
+                <div className="max-w-2xl mx-auto py-12 px-4 text-center">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-8">
+                        <div className="text-6xl mb-4">👤</div>
+                        <h2 className="text-2xl font-bold text-blue-800 mb-4">User Dashboard</h2>
+                        <p className="text-blue-600 mb-6">
+                            This dashboard is for registered users. Companies have their own dashboard.
+                        </p>
+                        <div className="space-x-4">
+                            <Link to="/login" className="btn-primary">
+                                User Login
+                            </Link>
+                            <Link to="/company/dashboard" className="btn-secondary">
+                                Company Dashboard
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </Layout>
+        )
+    }
 
     useEffect(() => {
         loadDashboardData()
