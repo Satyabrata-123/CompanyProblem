@@ -30,16 +30,16 @@ export default function ChallengeDetailPage() {
 
       // First, try to get the challenge from the generic endpoint
       let challengeData = null
-      
+
       try {
         challengeData = await api.getChallengeById(id)
         console.log('✅ Challenge loaded from generic endpoint:', challengeData)
       } catch (genericError) {
         console.log('⚠️ Generic endpoint failed, trying difficulty-specific endpoints...')
-        
+
         // If generic fails, try difficulty-specific endpoints
         const difficulties = ['BEGINNER', 'INTERMEDIATE', 'EXPERT']
-        
+
         for (const diff of difficulties) {
           try {
             challengeData = await api.getChallengeByIdAndDifficulty(diff, id)
@@ -282,7 +282,13 @@ export default function ChallengeDetailPage() {
                   return (b.voteCount || 0) - (a.voteCount || 0)
                 })
                 .map((solution, index) => (
-                  <SolutionCard key={solution.id} solution={solution} rank={index + 1} />
+                  <SolutionCard
+                    key={solution.id}
+                    solution={solution}
+                    rank={index + 1}
+                    currentUser={currentUser}
+                    onDelete={loadChallengeData}
+                  />
                 ))}
             </div>
           )}
@@ -292,7 +298,39 @@ export default function ChallengeDetailPage() {
   )
 }
 
-function SolutionCard({ solution, rank }) {
+function SolutionCard({ solution, rank, currentUser, onDelete }) {
+  const { addNotification } = useNotification()
+  const [deleting, setDeleting] = useState(false)
+
+  const isOwnSolution = currentUser && solution.submittedBy === currentUser.id
+
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this submission? This action cannot be undone.')) {
+      return
+    }
+
+    setDeleting(true)
+    try {
+      // Delete challenge idea submission
+      await api.delete(`/challenges/ideas/${solution.id}`)
+
+      addNotification({
+        type: 'success',
+        message: 'Submission deleted successfully'
+      })
+
+      // Reload the challenge data
+      if (onDelete) onDelete()
+    } catch (error) {
+      addNotification({
+        type: 'error',
+        message: 'Failed to delete submission'
+      })
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'accepted':
@@ -309,7 +347,8 @@ function SolutionCard({ solution, rank }) {
   }
 
   return (
-    <div className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+    <div className={`border rounded-lg p-6 hover:shadow-md transition-shadow ${isOwnSolution ? 'border-blue-300 bg-blue-50' : 'border-gray-200'
+      }`}>
       <div className="flex justify-between items-start mb-4">
         <div className="flex items-center gap-3">
           <span className="bg-primary-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
@@ -318,6 +357,11 @@ function SolutionCard({ solution, rank }) {
           {solution.score && (
             <span className="bg-green-500 text-white px-2 py-1 rounded text-xs font-semibold">
               Score: {solution.score}
+            </span>
+          )}
+          {isOwnSolution && (
+            <span className="bg-blue-500 text-white px-2 py-1 rounded text-xs font-semibold">
+              Your Submission
             </span>
           )}
         </div>
@@ -357,6 +401,15 @@ function SolutionCard({ solution, rank }) {
             >
               Demo
             </a>
+          )}
+          {isOwnSolution && (
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="text-sm bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+            >
+              {deleting ? 'Deleting...' : '🗑️ Delete'}
+            </button>
           )}
         </div>
         <span className="text-sm text-gray-500">
