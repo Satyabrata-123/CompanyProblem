@@ -3,7 +3,7 @@
 *.class
 *.jar
 # Environment variables
-.env
+# .env
 
 # Properties files (ALL .properties files will be ignored)
 *.properties
