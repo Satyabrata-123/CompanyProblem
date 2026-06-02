@@ -4,7 +4,7 @@
 *.jar
 # Environment variables
 .env
-
+.bolt
 # Properties files (ALL .properties files will be ignored)
 *.properties
 
