@@ -10,10 +10,10 @@ start-complete-system.bat
 ```
 
 This starts:
-- ✅ Kafka (KRaft mode - no Zookeeper)
-- ✅ All microservices (Eureka, Company, User, Idea, Gamification, AI)
-- ✅ ChatModel service (Python + Gemini AI)
-- ✅ Kafka consumer (automatic AI comparison)
+- Kafka (KRaft mode - no Zookeeper)
+- All microservices (Eureka, Company, User, Idea, Gamification, AI)
+- ChatModel service (Python + Gemini AI)
+- Kafka consumer (automatic AI comparison)
 
 ## Prerequisites
 
