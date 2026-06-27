@@ -2,7 +2,7 @@
 
 A complete microservices-based innovation platform with AI-powered idea comparison using Kafka event streaming and Google Gemini AI.
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
 # Start everything at once
@@ -15,7 +15,7 @@ This starts:
 - ✅ ChatModel service (Python + Gemini AI)
 - ✅ Kafka consumer (automatic AI comparison)
 
-## 📋 Prerequisites
+## Prerequisites
 
 - Java 17
 - Maven 3.6+
@@ -23,7 +23,7 @@ This starts:
 - Kafka 3.6.1 (installed at `C:\kafka`)
 - Gemini API key
 
-## 🏗️ Architecture
+## Architecture
 
 The platform uses event-driven architecture with Kafka for asynchronous AI comparison:
 
@@ -35,7 +35,7 @@ User submits idea → Company Service → Kafka → Consumer → ChatModel (Gemi
 
 See [ARCHITECTURE_DIAGRAM.md](ARCHITECTURE_DIAGRAM.md) for detailed architecture.
 
-## 📦 Services
+## Services
 
 | Service | Port | Description |
 |---------|------|-------------|
@@ -73,7 +73,7 @@ GEMINI_API_KEY=your_api_key_here
 start-complete-system.bat
 ```
 
-## 🧪 Testing
+## Testing
 
 1. Open http://localhost:3000
 2. Navigate to a challenge
@@ -83,7 +83,7 @@ start-complete-system.bat
 
 See [TEST_KAFKA_FLOW.md](TEST_KAFKA_FLOW.md) for detailed testing guide.
 
-## 📚 Documentation
+## Documentation
 
 - **[QUICK_START.md](QUICK_START.md)** - Quick reference guide
 - **[ARCHITECTURE_DIAGRAM.md](ARCHITECTURE_DIAGRAM.md)** - System architecture
@@ -93,7 +93,7 @@ See [TEST_KAFKA_FLOW.md](TEST_KAFKA_FLOW.md) for detailed testing guide.
 - **[TEST_KAFKA_FLOW.md](TEST_KAFKA_FLOW.md)** - Testing guide
 - **[BUILD_GUIDE.md](BUILD_GUIDE.md)** - Build instructions
 
-## 🎯 Key Features
+## Key Features
 
 ### Event-Driven Architecture
 - Asynchronous processing with Kafka
@@ -158,7 +158,7 @@ cd kafka-scripts
 view-messages.bat
 ```
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Services Won't Start
 ```bash
@@ -187,32 +187,26 @@ create-topics.bat
 2. Check ChatModel logs
 3. Test API: `curl http://localhost:5000/health`
 
-## 📊 Technology Stack
+## Technology Stack
 
 **Backend:** Java 17, Spring Boot 3.2.0, Spring Cloud, Spring Kafka, Maven
 
-**AI Service:** Python 3.x, Flask, Langchain, Google Gemini AI, Kafka-Python
+**AI Service:** Gemini AI
 
 **Message Broker:** Apache Kafka 3.6.1 (KRaft mode)
 
-**Database:** H2 (in-memory), JPA/Hibernate
+**Database:** MySQL, JPA/Hibernate
 
 **Frontend:** React 18, React Router, Axios
 
-## 🔐 Security
-
-- CORS enabled for frontend
-- Service-to-service communication via Eureka
-- API key authentication for Gemini AI
-
-## 📈 Performance
+## Performance
 
 - Idea submission: < 1 second
 - Kafka event publishing: < 500ms
 - AI comparison: 2-4 seconds
 - Total end-to-end: 5-8 seconds
 
-## 🚀 Deployment
+## Deployment
 
 ### Production Considerations
 - Replace H2 with PostgreSQL/MySQL
@@ -223,7 +217,7 @@ create-topics.bat
 - Set up monitoring (Prometheus/Grafana)
 - Configure log aggregation (ELK stack)
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create feature branch
@@ -231,11 +225,7 @@ create-topics.bat
 4. Push to branch
 5. Create pull request
 
-## 📝 License
-
-This project is licensed under the MIT License.
-
-## 🆘 Support
+## Support
 
 For issues and questions:
 1. Check documentation files
@@ -243,7 +233,7 @@ For issues and questions:
 3. Verify prerequisites
 4. Check troubleshooting section
 
-## ✅ Success Checklist
+## Success Checklist
 
 After starting, verify:
 - [ ] Kafka status shows "running"
